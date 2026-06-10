@@ -1,16 +1,21 @@
 const API = "https://script.google.com/macros/s/AKfycby1lozKAoUrxHMNpXVJxlqwmfgb0Iqd08lUm4jLpWutpvwUpHW-ZoYBv8By0v88EwX1/exec";
 
-async function api(action, params = {}) {
-  const url = new URL(API);
-  url.searchParams.append("action", action);
+async function load() {
+  try {
+    const res = await fetch(`${API}?action=stats&username=test`);
+    const data = await res.json();
 
-  Object.keys(params).forEach(k => {
-    url.searchParams.append(k, params[k]);
-  });
+    console.log("DATA:", data);
 
-  const res = await fetch(url);
-  return await res.json();
+    document.getElementById("app").innerHTML = `
+      <h1>נלמדו: ${data.learned}</h1>
+      <h1>דולגו: ${data.skipped}</h1>
+      <h1>סה״כ: ${data.total}</h1>
+    `;
+  } catch (e) {
+    console.log("ERROR:", e);
+    document.getElementById("app").innerHTML = "שגיאה בטעינה";
+  }
 }
-api("stats", { username: "test" }).then(res => {
-  console.log("TEST RESPONSE:", res);
-});
+
+load();
