@@ -1,16 +1,21 @@
-async function api(action, params = {}) {
-  const url = new URL("https://script.google.com/macros/s/AKfycby1lozKAoUrxHMNpXVJxlqwmfgb0Iqd08lUm4jLpWutpvwUpHW-ZoYBv8By0v88EwX1/exec");
+const API = "https://script.google.com/macros/s/AKfycby1lozKAoUrxHMNpXVJxlqwmfgb0Iqd08lUm4jLpWutpvwUpHW-ZoYBv8By0v88EwX1/exec";
 
-  url.searchParams.append("action", action);
+async function load() {
+  try {
+    const res = await fetch(`${API}?action=stats&username=test`);
+    const data = await res.json();
 
-  Object.keys(params).forEach(k => {
-    url.searchParams.append(k, params[k]);
-  });
+    console.log("DATA:", data);
 
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    mode: "cors"
-  });
-
-  return await res.json();
+    document.getElementById("app").innerHTML = `
+      <h2>נלמדו: ${data.learned}</h2>
+      <h2>דולגו: ${data.skipped}</h2>
+      <h2>סה״כ: ${data.total}</h2>
+    `;
+  } catch (err) {
+    console.log("ERROR:", err);
+    document.getElementById("app").innerHTML = "שגיאה בטעינה";
+  }
 }
+
+load();
