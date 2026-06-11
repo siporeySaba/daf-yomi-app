@@ -102,15 +102,23 @@ function loadMasechtot() {
 window.openMasechet = function(name) {
   const total = masechetPages[name];
 
+  console.log("📖 open:", name, "total:", total);
+
   if (!total) {
-    console.error("❌ no masechet data:", name);
+    appDiv.innerHTML = `
+      <div class="card">
+        <button onclick="goBack()">⬅ חזור</button>
+        <p>❌ לא נמצא מידע על המסכת: ${name}</p>
+      </div>
+    `;
     return;
   }
 
   appDiv.innerHTML = `
     <div class="card">
-<button onclick="goBack()">⬅ חזור</button>
-<h2>${name}</h2>
+      <button onclick="goBack()">⬅ חזור</button>
+      <h2>${name}</h2>
+      <p>טוען דפים...</p>
       <div id="dapim"></div>
     </div>
   `;
