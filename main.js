@@ -1,16 +1,12 @@
 import {
   collection,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-import {
+  getDocs,
   doc,
   setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-import { db } from "./firebase.js";
+import { db, auth, provider } from "./firebase.js";
 
-import { auth, provider } from "./firebase.js";
 import {
   signInWithPopup,
   onAuthStateChanged,
@@ -20,6 +16,7 @@ import {
 console.log("🚀 APP START");
 
 const appDiv = document.getElementById("app");
+
 const masechetPages = {
   "ברכות": 64,
   "שבת": 157,
@@ -59,7 +56,6 @@ const masechetPages = {
   "מעילה": 22,
   "נדה": 73
 };
-let currentUser = null;
 
 // ---------------- LOGIN ----------------
 function renderLogin() {
@@ -73,47 +69,40 @@ function renderLogin() {
   };
 }
 
-// ---------------- APP ROOT ----------------
+// ---------------- APP ----------------
 function renderApp(user) {
-  console.log("TEST renderApp UI");
-
-appDiv.innerHTML = "<h1>UI עובד</h1>";
-  
-  currentUser = user;
+  console.log("👤 renderApp:", user.email);
 
   appDiv.innerHTML = `
-  <div style="direction: rtl; font-family: Arial; padding: 16px">
-    <h2>שלום ${user.displayName}</h2>
-    <p>${user.email}</p>
+    <div style="direction: rtl; font-family: Arial; padding: 16px">
+      <h2>שלום ${user.displayName}</h2>
+      <p>${user.email}</p>
 
-    <button id="logoutBtn">התנתק</button>
+      <button id="logoutBtn">התנתק</button>
+      <button id="progressBtn">📊 ההתקדמות שלי</button>
 
-    <button id="progressBtn">📊 ההתקדמות שלי</button>
+      <hr/>
 
-    <hr/>
-
-    <h3>📚 מסכתות</h3>
-    <div id="masechtot"></div>
-  </div>
-`;
+      <h3>📚 מסכתות</h3>
+      <div id="masechtot"></div>
+    </div>
+  `;
 
   document.getElementById("logoutBtn").onclick = async () => {
     await signOut(auth);
   };
 
-  loadMasechtot();
-  document.getElementById("progressBtn").onclick = () => {
-  loadProgress();
-};
+  document.getElementById("progressBtn").onclick = loadProgress;
 
+  loadMasechtot();
 }
 
-//קריאת נתונים מה DB
+// ---------------- PROGRESS ----------------
 async function loadProgress() {
   const user = auth.currentUser;
   if (!user) return;
 
-  console.log("📊 loading real progress...");
+  console.log("📊 loading progress...");
 
   const snap = await getDocs(
     collection(db, "users", user.uid, "progress")
@@ -121,14 +110,11 @@ async function loadProgress() {
 
   const data = {};
 
-  snap.forEach(doc => {
-    const item = doc.data();
+  snap.forEach(d => {
+    const item = d.data();
 
     if (!data[item.masechet]) {
-      data[item.masechet] = {
-        learned: 0,
-        skipped: 0
-      };
+      data[item.masechet] = { learned: 0, skipped: 0 };
     }
 
     if (item.status === "learned") {
@@ -138,7 +124,6 @@ async function loadProgress() {
     }
   });
 
-  // הצגה יפה של הנתונים בהתקדמות אישית
   renderProgress(data);
 }
 
@@ -149,10 +134,9 @@ function renderProgress(data) {
       <h2>📊 ההתקדמות שלי</h2>
   `;
 
-  Object.keys(data).forEach(name => {
+  for (const name in data) {
     const d = data[name];
     const total = masechetPages[name] || 1;
-
     const percent = Math.round((d.learned / total) * 100);
 
     html += `
@@ -163,51 +147,47 @@ function renderProgress(data) {
         <p>📊 התקדמות: ${percent}%</p>
       </div>
     `;
-  });
+  }
 
   html += `</div>`;
   appDiv.innerHTML = html;
 }
 
-// ---------------- MASECHTOT LIST ----------------
+// ---------------- MASECHTOT ----------------
 function loadMasechtot() {
-  const masechtot = Object.keys(masechetPages);
-
   const container = document.getElementById("masechtot");
 
-  container.innerHTML = masechtot.map(name => `
-  <div onclick="openMasechet('${name}')" style="
-    padding:10px;
-    margin:5px;
-    border:1px solid #ccc;
-    border-radius:8px;
-    cursor:pointer;
-  ">
-    📘 ${name}
-    <div style="color:gray; font-size:12px;">
-      ${masechetPages[name]} דפים
-    </div>
-  </div>
-`).join("");}
+  container.innerHTML = Object.keys(masechetPages)
+    .map(name => `
+      <div onclick="openMasechet('${name}')" style="
+        padding:10px;
+        margin:5px;
+        border:1px solid #ccc;
+        border-radius:8px;
+        cursor:pointer;
+      ">
+        📘 ${name}
+        <div style="color:gray;font-size:12px;">
+          ${masechetPages[name]} דפים
+        </div>
+      </div>
+    `).join("");
+}
+
 // ---------------- OPEN MASECHET ----------------
 window.openMasechet = function(name) {
   const total = masechetPages[name];
 
-  console.log("📖 open masechet:", name, "total:", total);
-
-  const start = 2;
-
-  // 🔥 כאן התיקון הקריטי
   const dapim = Array.from(
     { length: total },
-    (_, i) => `דף ${start + i}`
+    (_, i) => `דף ${i + 1}`
   );
 
   appDiv.innerHTML = `
     <div style="direction: rtl; font-family: Arial; padding: 16px">
       <button onclick="location.reload()">⬅ חזור</button>
 
-      <h2>מסכת ${name}</h2>
+      <h2>${name}</h2>
       <p style="color:gray">${total} דפים</p>
 
       <div id="dapim"></div>
@@ -215,49 +195,39 @@ window.openMasechet = function(name) {
   `;
 
   document.getElementById("dapim").innerHTML = dapim.map(daf => `
-    <div style="padding:10px; margin:5px; border:1px solid #ddd; border-radius:8px;">
+    <div style="padding:10px;margin:5px;border:1px solid #ddd;border-radius:8px;">
       📄 ${daf}
       <button onclick="markLearned('${name}','${daf}')">✔ למדתי</button>
       <button onclick="markSkipped('${name}','${daf}')">⏭ דילגתי</button>
     </div>
   `).join("");
 };
-//שמירת למדתי
 
+// ---------------- SAVE ----------------
 window.markLearned = async function(masechet, daf) {
   const user = auth.currentUser;
   if (!user) return;
 
   await setDoc(
     doc(db, "users", user.uid, "progress", `${masechet}_${daf}`),
-    {
-      masechet,
-      daf,
-      status: "learned",
-      timestamp: Date.now()
-    }
+    { masechet, daf, status: "learned", timestamp: Date.now() }
   );
 
-  console.log("✔ נשמר למדתי:", masechet, daf);
+  console.log("✔ נשמר למדתי");
 };
 
-//שמירת דילגתי
 window.markSkipped = async function(masechet, daf) {
   const user = auth.currentUser;
   if (!user) return;
 
   await setDoc(
     doc(db, "users", user.uid, "progress", `${masechet}_${daf}`),
-    {
-      masechet,
-      daf,
-      status: "skipped",
-      timestamp: Date.now()
-    }
+    { masechet, daf, status: "skipped", timestamp: Date.now() }
   );
 
-  console.log("⏭ נשמר דילוג:", masechet, daf);
+  console.log("⏭ נשמר דילוג");
 };
+
 // ---------------- AUTH ----------------
 onAuthStateChanged(auth, (user) => {
   if (user) renderApp(user);
