@@ -82,18 +82,20 @@ appDiv.innerHTML = "<h1>UI עובד</h1>";
   currentUser = user;
 
   appDiv.innerHTML = `
-    <div style="direction: rtl; font-family: Arial; padding: 16px">
-      <h2>שלום ${user.displayName}</h2>
-      <p>${user.email}</p>
+  <div style="direction: rtl; font-family: Arial; padding: 16px">
+    <h2>שלום ${user.displayName}</h2>
+    <p>${user.email}</p>
 
-      <button id="logoutBtn">התנתק</button>
+    <button id="logoutBtn">התנתק</button>
 
-      <hr/>
+    <button id="progressBtn">📊 ההתקדמות שלי</button>
 
-      <h3>📚 מסכתות</h3>
-      <div id="masechtot"></div>
-    </div>
-  `;
+    <hr/>
+
+    <h3>📚 מסכתות</h3>
+    <div id="masechtot"></div>
+  </div>
+`;
 
   document.getElementById("logoutBtn").onclick = async () => {
     await signOut(auth);
@@ -101,10 +103,10 @@ appDiv.innerHTML = "<h1>UI עובד</h1>";
 
   loadMasechtot();
 }
-
-<button id="progressBtn">📊 ההתקדמות שלי</button>
 document.getElementById("progressBtn").onclick = () => {
   loadProgress();
+};
+
 };
 
 //קריאת נתונים מה DB
