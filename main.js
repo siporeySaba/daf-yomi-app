@@ -203,24 +203,38 @@ function loadMasechtot() {
   `).join("");
 }
 
+
+const dafYomiOrder = Object.keys(masechetPages).map(name => ({
+  masechet: name,
+  dapim: masechetPages[name]
+}));
+
 //הצגת הדף של היום על פי חישוב מתחילת המחזור
 function getTodayDafYomi() {
+  const startDate = new Date("2020-01-05"); // תחילת מחזור
   const today = new Date();
-  const diffDays = Math.floor((today - DAF_YOMI_START) / (1000 * 60 * 60 * 24));
+
+  const diffDays = Math.floor(
+    (today - startDate) / (1000 * 60 * 60 * 24)
+  );
 
   let counter = diffDays;
 
-  for (const m of dafYomi) {
+  for (const m of dafYomiOrder) {
     if (counter < m.dapim) {
       return {
         masechet: m.masechet,
-        daf: counter + 2
+        daf: counter + 1
       };
     }
     counter -= m.dapim;
   }
 
-  return null;
+  // אם עבר הכל (לא אמור לקרות)
+  return dafYomiOrder[0] ? {
+    masechet: dafYomiOrder[0].masechet,
+    daf: 1
+  } : null;
 }
 // ---------------- OPEN MASECHET ----------------
 window.openMasechet = function(name) {
