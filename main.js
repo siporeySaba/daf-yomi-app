@@ -97,25 +97,28 @@ function loadMasechtot() {
   const container = document.getElementById("masechtot");
 
   container.innerHTML = masechtot.map(name => `
-    <div onclick="openMasechet('${name}')" style="
-      padding:10px;
-      margin:5px;
-      border:1px solid #ccc;
-      border-radius:8px;
-      cursor:pointer;
-    ">
-      📘 ${name} — ${masechetPages[name]} דפים
+  <div onclick="openMasechet('${name}')" style="
+    padding:10px;
+    margin:5px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    cursor:pointer;
+  ">
+    📘 ${name}
+    <div style="color:gray; font-size:12px;">
+      ${masechetPages[name]} דפים
     </div>
-  `).join("");
-}
+  </div>
+`).join("");}
 // ---------------- OPEN MASECHET ----------------
 window.openMasechet = function(name) {
   const total = masechetPages[name];
 
-  const dapim = Array.from(
-    { length: total },
-    (_, i) => `דף ${i + 2}`
-  );
+  const start = 2;
+const pages = Array.from(
+  { length: total },
+  (_, i) => `דף ${start + i}`
+);
 
   appDiv.innerHTML = `
     <div style="direction: rtl; font-family: Arial; padding: 16px">
