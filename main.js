@@ -288,17 +288,19 @@ window.markSkipped = async function(masechet, daf) {
   );
 
   showToast("⏭ סומן: דילגת");
+};
 
-  const btn = event?.target;
-  if (btn) {
-    btn.innerText = "⏭ דלג";
-    btn.style.background = "#eab308";
-    btn.style.color = "black";
-  }
-};    toast.style.opacity = "0";
+function showToast(text) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+
+  toast.innerText = text;
+  toast.style.opacity = "1";
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
   }, 2000);
 }
-
 // ---------------- AUTH ----------------
 onAuthStateChanged(auth, (user) => {
   if (user) renderApp(user);
