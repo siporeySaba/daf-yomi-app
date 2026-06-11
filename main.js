@@ -7,6 +7,7 @@ import {
 
 const appDiv = document.getElementById("app");
 
+// מסך התחברות
 function renderLogin() {
   appDiv.innerHTML = `
     <h2>דף יומי</h2>
@@ -18,28 +19,34 @@ function renderLogin() {
   };
 }
 
+// מסך ראשי
 function renderApp(user) {
   appDiv.innerHTML = `
     <div style="direction: rtl; font-family: Arial; padding: 16px">
       <h2>שלום ${user.displayName}</h2>
       <p>${user.email}</p>
+
+      <hr/>
+
+      <div id="masechtot">טוען מסכתות...</div>
     </div>
   `;
-}
+
   loadMasechtot();
 }
 
+// רשימת מסכתות
 function loadMasechtot() {
   const masechtot = [
-    "ברכות", "שבת", "עירובין", "פסחים", "שקלים",
-    "יומא", "סוכה", "ביצה", "ראש השנה", "תענית",
-    "מגילה", "מועד קטן", "חגיגה",
-    "יבמות", "כתובות", "נדרים", "נזיר", "סוטה",
-    "גיטין", "קידושין",
-    "בבא קמא", "בבא מציעא", "בבא בתרא",
-    "סנהדרין", "מכות", "שבועות", "עבודה זרה",
-    "הוריות", "זבחים", "מנחות", "חולין", "בכורות",
-    "ערכין", "תמורה", "כריתות", "מעילה", "נדה"
+    "ברכות","שבת","עירובין","פסחים","שקלים",
+    "יומא","סוכה","ביצה","ראש השנה","תענית",
+    "מגילה","מועד קטן","חגיגה",
+    "יבמות","כתובות","נדרים","נזיר","סוטה",
+    "גיטין","קידושין",
+    "בבא קמא","בבא מציעא","בבא בתרא",
+    "סנהדרין","מכות","שבועות","עבודה זרה",
+    "הוריות","זבחים","מנחות","חולין","בכורות",
+    "ערכין","תמורה","כריתות","מעילה","נדה"
   ];
 
   const container = document.getElementById("masechtot");
@@ -50,17 +57,17 @@ function loadMasechtot() {
       margin:5px;
       border:1px solid #ccc;
       border-radius:8px;
-      cursor:pointer;
     ">
       📘 ${name}
     </div>
   `).join("");
 }
 
+// מצב התחברות
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    renderApp(user);   // נשאר מחובר
+    renderApp(user);
   } else {
-    renderLogin();     // רק אם אין משתמש
+    renderLogin();
   }
 });
