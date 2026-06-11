@@ -12,17 +12,60 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
 import { toGemaraDaf } from "./gemaraRenderer.js";
+
 console.log("🚀 APP START");
 
 const appDiv = document.getElementById("app");
+
+// ---------------- DATA ----------------
+const masechetPages = {
+  "ברכות": 64,
+  "שבת": 157,
+  "עירובין": 105,
+  "פסחים": 121,
+  "שקלים": 22,
+  "יומא": 88,
+  "סוכה": 56,
+  "ביצה": 40,
+  "ראש השנה": 35,
+  "תענית": 31,
+  "מגילה": 32,
+  "מועד קטן": 29,
+  "חגיגה": 27,
+  "יבמות": 122,
+  "כתובות": 112,
+  "נדרים": 91,
+  "נזיר": 66,
+  "סוטה": 49,
+  "גיטין": 90,
+  "קידושין": 82,
+  "בבא קמא": 119,
+  "בבא מציעא": 119,
+  "בבא בתרא": 176,
+  "סנהדרין": 113,
+  "מכות": 24,
+  "שבועות": 49,
+  "עבודה זרה": 76,
+  "הוריות": 14,
+  "זבחים": 120,
+  "מנחות": 110,
+  "חולין": 142,
+  "בכורות": 61,
+  "ערכין": 34,
+  "תמורה": 34,
+  "כריתות": 28,
+  "מעילה": 22,
+  "נדה": 73
+};
 
 // ---------------- LOGIN ----------------
 function renderLogin() {
   appDiv.innerHTML = `
     <div style="padding:20px; text-align:center">
       <h2>דף יומי</h2>
-      <button class="primary-btn" id="loginBtn">התחבר עם Google</button>
+      <button id="loginBtn">התחבר עם Google</button>
     </div>
   `;
 
@@ -50,52 +93,36 @@ function renderApp(user) {
   `;
 
   document.getElementById("logoutBtn").onclick = () => signOut(auth);
-
   document.getElementById("todayBtn").onclick = loadTodayDaf;
   document.getElementById("progressBtn").onclick = loadProgress;
 
   loadMasechtot();
 }
 
-// ---------------- API (הדף היומי) ----------------
+// ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
-  try {
-    const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split("T")[0];
 
-    const res = await fetch(`https://www.hebcal.com/daf?cfg=json&date=${today}`);
-    const data = await res.json();
+  const res = await fetch(`https://www.hebcal.com/daf?cfg=json&date=${today}`);
+  const data = await res.json();
 
-    const [masechet, daf] = data.hebrew.split(" ");
+  const [masechet, daf] = data.hebrew.split(" ");
 
-    alert(`📅 היום: ${masechet} דף ${daf}`);
+  alert(`📅 היום: ${masechet} דף ${daf}`);
 
-    openMasechet(masechet);
-  } catch (e) {
-    console.error("API error:", e);
-  }
+  openMasechet(masechet);
 }
 
 // ---------------- MASECHTOT ----------------
 function loadMasechtot() {
-  const list = [
-    "ברכות","שבת","עירובין","פסחים","שקלים",
-    "יומא","סוכה","ביצה","ראש השנה","תענית",
-    "מגילה","מועד קטן","חגיגה",
-    "יבמות","כתובות","נדרים","נזיר","סוטה",
-    "גיטין","קידושין",
-    "בבא קמא","בבא מציעא","בבא בתרא",
-    "סנהדרין","מכות","שבועות","עבודה זרה",
-    "הוריות","זבחים","מנחות","חולין","בכורות",
-    "ערכין","תמורה","כריתות","מעילה","נדה"
-  ];
-
   const container = document.getElementById("masechtot");
 
-  container.innerHTML = list.map(name => `
-    <div class="card" onclick="openMasechet('${name}')">
-      📘 ${name}
-    </div>
-  `).join("");
+  container.innerHTML = Object.keys(masechetPages)
+    .map(name => `
+      <div class="card" onclick="openMasechet('${name}')">
+        📘 ${name}
+      </div>
+    `).join("");
 }
 
 // ---------------- OPEN MASECHET ----------------
@@ -103,9 +130,9 @@ window.openMasechet = function(name) {
   const total = masechetPages[name];
 
   console.log("📖 open:", name, "total:", total);
-window.masechetPages = masechetPages;
-  
-  appDiv.innerHTML = `
+
+  if (!total) {
+    appDiv.innerHTML = `
       <div class="card">
         <button onclick="goBack()">⬅ חזור</button>
         <p>❌ לא נמצא מידע על המסכת: ${name}</p>
@@ -113,17 +140,6 @@ window.masechetPages = masechetPages;
     `;
     return;
   }
-
-  appDiv.innerHTML = `
-    <div class="card">
-      <button onclick="goBack()">⬅ חזור</button>
-      <h2>${name}</h2>
-      <p>טוען דפים...</p>
-      <div id="dapim"></div>
-    </div>
-  `;
-
-  const container = document.getElementById("dapim");
 
   const dapim = Array.from({ length: total }, (_, i) => {
     const dafNumber = i + 2;
@@ -138,20 +154,21 @@ window.masechetPages = masechetPages;
         </div>
       </div>
     `;
-  
+  });
 
-  container.innerHTML = dapim.join("");
+  appDiv.innerHTML = `
+    <div class="card">
+      <button onclick="goBack()">⬅ חזור</button>
+      <h2>${name}</h2>
+      <div>${dapim.join("")}</div>
+    </div>
+  `;
 };
 
-//הגדרת כפתור חזרה.
+// ---------------- BACK ----------------
 window.goBack = function () {
   renderApp(auth.currentUser);
 };
-
-// ---------------- PROGRESS (נשאיר ריק כרגע אם צריך) ----------------
-async function loadProgress() {
-  alert("עוד בשלב שדרוג");
-}
 
 // ---------------- AUTH ----------------
 onAuthStateChanged(auth, (user) => {
