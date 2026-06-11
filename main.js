@@ -118,8 +118,11 @@ window.openMasechet = function(name) {
 
   const start = 2;
 
-  // 👉 זה מה שהיה חסר לך
-  const dapim = Array.from({ length: total }, (_, i) => `דף ${start + i}`);
+  // 🔥 כאן התיקון הקריטי
+  const dapim = Array.from(
+    { length: total },
+    (_, i) => `דף ${start + i}`
+  );
 
   appDiv.innerHTML = `
     <div style="direction: rtl; font-family: Arial; padding: 16px">
