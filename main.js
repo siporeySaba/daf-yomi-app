@@ -109,13 +109,18 @@ function renderApp(user) {
 `;
 
   document.getElementById("todayBtn").onclick = () => {
+  console.log("📅 today button clicked");
+
   const today = getTodayDafYomi();
-  if (!today) return;
+  if (!today) {
+    console.log("no today daf");
+    return;
+  }
 
   openMasechet(today.masechet);
 
   setTimeout(() => {
-    console.log("📅 היום:", today);
+    console.log("📖 navigating to daf", today);
   }, 300);
 };
   document.getElementById("logoutBtn").onclick = async () => {
