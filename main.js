@@ -114,17 +114,19 @@ function loadMasechtot() {
 window.openMasechet = function(name) {
   const total = masechetPages[name];
 
+  console.log("📖 open masechet:", name, "total:", total);
+
   const start = 2;
-const pages = Array.from(
-  { length: total },
-  (_, i) => `דף ${start + i}`
-);
+
+  // 👉 זה מה שהיה חסר לך
+  const dapim = Array.from({ length: total }, (_, i) => `דף ${start + i}`);
 
   appDiv.innerHTML = `
     <div style="direction: rtl; font-family: Arial; padding: 16px">
       <button onclick="location.reload()">⬅ חזור</button>
 
       <h2>מסכת ${name}</h2>
+      <p style="color:gray">${total} דפים</p>
 
       <div id="dapim"></div>
     </div>
@@ -138,7 +140,6 @@ const pages = Array.from(
     </div>
   `).join("");
 };
-
 // ---------------- ACTIONS (בהמשך נשמור ב-Firebase) ----------------
 window.markLearned = function(masechet, daf) {
   console.log("✔ learned:", masechet, daf);
