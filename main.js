@@ -102,10 +102,11 @@ appDiv.innerHTML = "<h1>UI עובד</h1>";
   };
 
   loadMasechtot();
-}
-document.getElementById("progressBtn").onclick = () => {
+  document.getElementById("progressBtn").onclick = () => {
   loadProgress();
 };
+
+}
 
 //קריאת נתונים מה DB
 async function loadProgress() {
