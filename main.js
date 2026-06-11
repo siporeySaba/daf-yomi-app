@@ -272,6 +272,18 @@ window.markSkipped = async function(masechet, daf) {
 
   console.log("⏭ נשמר דילוג");
 };
+// הצגת פופ אפ בסימון דילגתי\למדתי
+function showToast(text) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+
+  toast.innerText = text;
+  toast.style.opacity = "1";
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+  }, 2000);
+}
 
 // ---------------- AUTH ----------------
 onAuthStateChanged(auth, (user) => {
