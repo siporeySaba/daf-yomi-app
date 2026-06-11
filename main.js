@@ -8,7 +8,45 @@ import {
 console.log("🚀 APP START");
 
 const appDiv = document.getElementById("app");
-
+const masechetPages = {
+  "ברכות": 64,
+  "שבת": 157,
+  "עירובין": 105,
+  "פסחים": 121,
+  "שקלים": 22,
+  "יומא": 88,
+  "סוכה": 56,
+  "ביצה": 40,
+  "ראש השנה": 35,
+  "תענית": 31,
+  "מגילה": 32,
+  "מועד קטן": 29,
+  "חגיגה": 27,
+  "יבמות": 122,
+  "כתובות": 112,
+  "נדרים": 91,
+  "נזיר": 66,
+  "סוטה": 49,
+  "גיטין": 90,
+  "קידושין": 82,
+  "בבא קמא": 119,
+  "בבא מציעא": 119,
+  "בבא בתרא": 176,
+  "סנהדרין": 113,
+  "מכות": 24,
+  "שבועות": 49,
+  "עבודה זרה": 76,
+  "הוריות": 14,
+  "זבחים": 120,
+  "מנחות": 110,
+  "חולין": 142,
+  "בכורות": 61,
+  "ערכין": 34,
+  "תמורה": 34,
+  "כריתות": 28,
+  "מעילה": 22,
+  "נדה": 73
+};
 let currentUser = null;
 
 // ---------------- LOGIN ----------------
@@ -54,17 +92,7 @@ appDiv.innerHTML = "<h1>UI עובד</h1>";
 
 // ---------------- MASECHTOT LIST ----------------
 function loadMasechtot() {
-  const masechtot = [
-    "ברכות","שבת","עירובין","פסחים","שקלים",
-    "יומא","סוכה","ביצה","ראש השנה","תענית",
-    "מגילה","מועד קטן","חגיגה",
-    "יבמות","כתובות","נדרים","נזיר","סוטה",
-    "גיטין","קידושין",
-    "בבא קמא","בבא מציעא","בבא בתרא",
-    "סנהדרין","מכות","שבועות","עבודה זרה",
-    "הוריות","זבחים","מנחות","חולין","בכורות",
-    "ערכין","תמורה","כריתות","מעילה","נדה"
-  ];
+  const masechtot = Object.keys(masechetPages);
 
   const container = document.getElementById("masechtot");
 
@@ -76,20 +104,21 @@ function loadMasechtot() {
       border-radius:8px;
       cursor:pointer;
     ">
-      📘 ${name}
+      📘 ${name} — ${masechetPages[name]} דפים
     </div>
   `).join("");
 }
-
 // ---------------- OPEN MASECHET ----------------
 window.openMasechet = function(name) {
-  console.log("📖 open masechet:", name);
+  const total = masechetPages[name];
 
-  const dapim = Array.from({length: 10}, (_, i) => `דף ${i+2}`);
+  const dapim = Array.from(
+    { length: total },
+    (_, i) => `דף ${i + 2}`
+  );
 
   appDiv.innerHTML = `
     <div style="direction: rtl; font-family: Arial; padding: 16px">
-
       <button onclick="location.reload()">⬅ חזור</button>
 
       <h2>מסכת ${name}</h2>
@@ -99,12 +128,7 @@ window.openMasechet = function(name) {
   `;
 
   document.getElementById("dapim").innerHTML = dapim.map(daf => `
-    <div style="
-      padding:10px;
-      margin:5px;
-      border:1px solid #ddd;
-      border-radius:8px;
-    ">
+    <div style="padding:10px; margin:5px; border:1px solid #ddd; border-radius:8px;">
       📄 ${daf}
       <button onclick="markLearned('${name}','${daf}')">✔ למדתי</button>
       <button onclick="markSkipped('${name}','${daf}')">⏭ דילגתי</button>
