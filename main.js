@@ -1,4 +1,9 @@
 import {
+  collection,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+import {
   doc,
   setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -95,6 +100,72 @@ appDiv.innerHTML = "<h1>UI עובד</h1>";
   };
 
   loadMasechtot();
+}
+
+<button id="progressBtn">📊 ההתקדמות שלי</button>
+document.getElementById("progressBtn").onclick = () => {
+  loadProgress();
+};
+
+//קריאת נתונים מה DB
+async function loadProgress() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  console.log("📊 loading real progress...");
+
+  const snap = await getDocs(
+    collection(db, "users", user.uid, "progress")
+  );
+
+  const data = {};
+
+  snap.forEach(doc => {
+    const item = doc.data();
+
+    if (!data[item.masechet]) {
+      data[item.masechet] = {
+        learned: 0,
+        skipped: 0
+      };
+    }
+
+    if (item.status === "learned") {
+      data[item.masechet].learned++;
+    } else {
+      data[item.masechet].skipped++;
+    }
+  });
+
+  // הצגה יפה של הנתונים בהתקדמות אישית
+  renderProgress(data);
+}
+
+function renderProgress(data) {
+  let html = `
+    <div style="direction: rtl; font-family: Arial; padding: 16px">
+      <button onclick="location.reload()">⬅ חזור</button>
+      <h2>📊 ההתקדמות שלי</h2>
+  `;
+
+  Object.keys(data).forEach(name => {
+    const d = data[name];
+    const total = masechetPages[name] || 1;
+
+    const percent = Math.round((d.learned / total) * 100);
+
+    html += `
+      <div style="border:1px solid #ccc; margin:10px; padding:10px; border-radius:8px;">
+        <h3>${name}</h3>
+        <p>✔ למדתי: ${d.learned}</p>
+        <p>⏭ דילגתי: ${d.skipped}</p>
+        <p>📊 התקדמות: ${percent}%</p>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  appDiv.innerHTML = html;
 }
 
 // ---------------- MASECHTOT LIST ----------------
