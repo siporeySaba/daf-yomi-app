@@ -255,33 +255,47 @@ window.markLearned = async function(masechet, daf) {
 
   await setDoc(
     doc(db, "users", user.uid, "progress", `${masechet}_${daf}`),
-    { masechet, daf, status: "learned", timestamp: Date.now() }
+    {
+      masechet,
+      daf,
+      status: "learned",
+      timestamp: Date.now()
+    }
   );
 
-  console.log("✔ נשמר למדתי");
-};
+  showToast("✔ סומן: למדתי");
 
+  // סימון ויזואלי
+  const btn = event?.target;
+  if (btn) {
+    btn.innerText = "✔ נלמד";
+    btn.style.background = "#16a34a";
+    btn.style.color = "white";
+  }
+};
 window.markSkipped = async function(masechet, daf) {
   const user = auth.currentUser;
   if (!user) return;
 
   await setDoc(
     doc(db, "users", user.uid, "progress", `${masechet}_${daf}`),
-    { masechet, daf, status: "skipped", timestamp: Date.now() }
+    {
+      masechet,
+      daf,
+      status: "skipped",
+      timestamp: Date.now()
+    }
   );
 
-  console.log("⏭ נשמר דילוג");
-};
-// הצגת פופ אפ בסימון דילגתי\למדתי
-function showToast(text) {
-  const toast = document.getElementById("toast");
-  if (!toast) return;
+  showToast("⏭ סומן: דילגת");
 
-  toast.innerText = text;
-  toast.style.opacity = "1";
-
-  setTimeout(() => {
-    toast.style.opacity = "0";
+  const btn = event?.target;
+  if (btn) {
+    btn.innerText = "⏭ דלג";
+    btn.style.background = "#eab308";
+    btn.style.color = "black";
+  }
+};    toast.style.opacity = "0";
   }, 2000);
 }
 
