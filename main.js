@@ -21,33 +21,11 @@ function renderLogin() {
 function renderApp(user) {
   appDiv.innerHTML = `
     <div style="direction: rtl; font-family: Arial; padding: 16px">
-
-      <h2>שלום ${user.displayName} 👋</h2>
+      <h2>שלום ${user.displayName}</h2>
       <p>${user.email}</p>
-
-      <hr/>
-
-      <button id="todayBtn">📅 הדף היומי של היום</button>
-      <button id="logoutBtn" style="margin-right:10px;">התנתק</button>
-
-      <hr/>
-
-      <h3>📚 מסכתות</h3>
-      <div id="masechtot">
-        טוען מסכתות...
-      </div>
-
     </div>
   `;
-
-  document.getElementById("logoutBtn").onclick = async () => {
-    await signOut(auth);
-  };
-
-  document.getElementById("todayBtn").onclick = () => {
-    alert("כאן נבנה דף יומי יומי אמיתי 🔥");
-  };
-
+}
   loadMasechtot();
 }
 
