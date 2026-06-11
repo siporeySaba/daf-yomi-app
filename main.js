@@ -1,3 +1,7 @@
+console.log("MAIN IS RUNNING");
+
+document.getElementById("app").innerHTML = "JS עובד ✔️";
+
 import { auth, provider } from "./firebase.js";
 import {
   signInWithPopup,
