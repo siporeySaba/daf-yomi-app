@@ -90,22 +90,21 @@ function renderLogin() {
 function renderApp(user) {
   console.log("👤 renderApp:", user.email);
 
-  appDiv.innerHTML = `
-  <div style="direction: rtl; font-family: Arial; padding: 16px">
+    appDiv.innerHTML = `
+  <div style="direction: rtl; max-width: 900px; margin: auto; padding: 20px">
 
-    <h2>שלום ${user.displayName}</h2>
-    <p>${user.email}</p>
+    <div class="card">
+      <h2>שלום ${user.displayName}</h2>
+      <p style="color:gray">${user.email}</p>
 
-    <button id="logoutBtn">התנתק</button>
-
-    <button id="todayBtn">📅 הדף היומי האמיתי</button>
-
-    <button id="progressBtn">📊 ההתקדמות שלי</button>
-
-    <hr/>
+      <button id="todayBtn" class="primary-btn">📅 הדף היומי</button>
+      <button id="progressBtn" class="secondary-btn">📊 התקדמות</button>
+      <button id="logoutBtn" class="secondary-btn">התנתק</button>
+    </div>
 
     <h3>📚 מסכתות</h3>
     <div id="masechtot"></div>
+
   </div>
 `;
 
@@ -189,20 +188,14 @@ function loadMasechtot() {
   const container = document.getElementById("masechtot");
 
   container.innerHTML = Object.keys(masechetPages)
-    .map(name => `
-      <div onclick="openMasechet('${name}')" style="
-        padding:10px;
-        margin:5px;
-        border:1px solid #ccc;
-        border-radius:8px;
-        cursor:pointer;
-      ">
-        📘 ${name}
-        <div style="color:gray;font-size:12px;">
-          ${masechetPages[name]} דפים
-        </div>
+  .map(name => `
+    <div class="card" onclick="openMasechet('${name}')">
+      <div style="font-weight:600; font-size:16px">📘 ${name}</div>
+      <div style="color:gray; font-size:13px">
+        ${masechetPages[name]} דפים
       </div>
-    `).join("");
+    </div>
+  `).join("");
 }
 
 //הצגת הדף של היום על פי חישוב מתחילת המחזור
@@ -245,11 +238,13 @@ window.openMasechet = function(name) {
   `;
 
   document.getElementById("dapim").innerHTML = dapim.map(daf => `
-    <div style="padding:10px;margin:5px;border:1px solid #ddd;border-radius:8px;">
-      📄 ${daf}
-      <button onclick="markLearned('${name}','${daf}')">✔ למדתי</button>
-      <button onclick="markSkipped('${name}','${daf}')">⏭ דילגתי</button>
-    </div>
+    <div class="card">
+  📄 ${daf}
+  <div style="margin-top:6px">
+    <button class="primary-btn" onclick="markLearned('${name}','${daf}')">✔ למדתי</button>
+    <button class="secondary-btn" onclick="markSkipped('${name}','${daf}')">⏭ דילגתי</button>
+  </div>
+</div>
   `).join("");
 };
 
