@@ -16,6 +16,23 @@ import {
 console.log("🚀 APP START");
 
 const appDiv = document.getElementById("app");
+const DAF_YOMI_START = new Date("2020-01-05"); // תחילת מחזור עדכני (דוגמה)
+
+const dafYomi = [
+  { masechet: "ברכות", dapim: 63 },
+  { masechet: "שבת", dapim: 156 },
+  { masechet: "עירובין", dapim: 104 },
+  { masechet: "פסחים", dapim: 120 },
+  { masechet: "שקלים", dapim: 21 },
+  { masechet: "יומא", dapim: 87 },
+  { masechet: "סוכה", dapim: 55 },
+  { masechet: "ביצה", dapim: 39 },
+  { masechet: "ראש השנה", dapim: 34 },
+  { masechet: "תענית", dapim: 30 },
+  { masechet: "מגילה", dapim: 31 },
+  { masechet: "מועד קטן", dapim: 28 },
+  { masechet: "חגיגה", dapim: 26 }
+];
 
 const masechetPages = {
   "ברכות": 64,
@@ -74,20 +91,34 @@ function renderApp(user) {
   console.log("👤 renderApp:", user.email);
 
   appDiv.innerHTML = `
-    <div style="direction: rtl; font-family: Arial; padding: 16px">
-      <h2>שלום ${user.displayName}</h2>
-      <p>${user.email}</p>
+  <div style="direction: rtl; font-family: Arial; padding: 16px">
 
-      <button id="logoutBtn">התנתק</button>
-      <button id="progressBtn">📊 ההתקדמות שלי</button>
+    <h2>שלום ${user.displayName}</h2>
+    <p>${user.email}</p>
 
-      <hr/>
+    <button id="logoutBtn">התנתק</button>
 
-      <h3>📚 מסכתות</h3>
-      <div id="masechtot"></div>
-    </div>
-  `;
+    <button id="todayBtn">📅 הדף היומי האמיתי</button>
 
+    <button id="progressBtn">📊 ההתקדמות שלי</button>
+
+    <hr/>
+
+    <h3>📚 מסכתות</h3>
+    <div id="masechtot"></div>
+  </div>
+`;
+
+  document.getElementById("todayBtn").onclick = () => {
+  const today = getTodayDafYomi();
+  if (!today) return;
+
+  openMasechet(today.masechet);
+
+  setTimeout(() => {
+    console.log("📅 היום:", today);
+  }, 300);
+};
   document.getElementById("logoutBtn").onclick = async () => {
     await signOut(auth);
   };
@@ -174,6 +205,25 @@ function loadMasechtot() {
     `).join("");
 }
 
+//הצגת הדף של היום על פי חישוב מתחילת המחזור
+function getTodayDafYomi() {
+  const today = new Date();
+  const diffDays = Math.floor((today - DAF_YOMI_START) / (1000 * 60 * 60 * 24));
+
+  let counter = diffDays;
+
+  for (const m of dafYomi) {
+    if (counter < m.dapim) {
+      return {
+        masechet: m.masechet,
+        daf: counter + 2
+      };
+    }
+    counter -= m.dapim;
+  }
+
+  return null;
+}
 // ---------------- OPEN MASECHET ----------------
 window.openMasechet = function(name) {
   const total = masechetPages[name];
