@@ -4,7 +4,7 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-
+console.log("MAIN LOADED");
 const appDiv = document.getElementById("app");
 
 // התחברות
@@ -65,6 +65,7 @@ function loadMasechtot() {
 
 // מצב התחברות
 onAuthStateChanged(auth, (user) => {
+    console.log("AUTH STATE:", user);
   if (user) {
     renderApp(user);
   } else {
