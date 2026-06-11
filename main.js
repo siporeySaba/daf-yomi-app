@@ -25,6 +25,10 @@ function renderLogin() {
 
 // ---------------- APP ROOT ----------------
 function renderApp(user) {
+  console.log("TEST renderApp UI");
+
+appDiv.innerHTML = "<h1>UI עובד</h1>";
+  
   currentUser = user;
 
   appDiv.innerHTML = `
