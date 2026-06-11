@@ -1,46 +1,24 @@
-import { app, auth } from "./firebase.js";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { app, auth, provider } from "./firebase.js";
+import { signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 const appDiv = document.getElementById("app");
 
 appDiv.innerHTML = `
-  <h2>התחברות</h2>
-
-  <input id="email" placeholder="אימייל" />
-  <br/><br/>
-
-  <input id="password" type="password" placeholder="סיסמה" />
-  <br/><br/>
-
-  <button id="loginBtn">התחבר</button>
-  <button id="registerBtn">הרשמה</button>
+  <h2>דף יומי</h2>
+  <button id="googleLogin">התחבר עם Google</button>
 `;
 
-document.getElementById("loginBtn").onclick = async () => {
-  const email = email.value;
-  const password = password.value;
-
+document.getElementById("googleLogin").onclick = async () => {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
-    appDiv.innerHTML = "התחברת בהצלחה ✔️";
-  } catch (e) {
-    alert("שגיאה בהתחברות");
-    console.log(e);
-  }
-};
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
 
-document.getElementById("registerBtn").onclick = async () => {
-  const email = email.value;
-  const password = password.value;
-
-  try {
-    await createUserWithEmailAndPassword(auth, email, password);
-    appDiv.innerHTML = "נרשמת בהצלחה ✔️";
+    appDiv.innerHTML = `
+      <h3>שלום ${user.displayName}</h3>
+      <p>${user.email}</p>
+    `;
   } catch (e) {
-    alert("שגיאה בהרשמה");
     console.log(e);
+    alert("שגיאה בהתחברות עם Google");
   }
 };
