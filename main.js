@@ -103,9 +103,9 @@ window.openMasechet = function(name) {
   const total = masechetPages[name];
 
   console.log("📖 open:", name, "total:", total);
-
-  if (!total) {
-    appDiv.innerHTML = `
+window.masechetPages = masechetPages;
+  
+  appDiv.innerHTML = `
       <div class="card">
         <button onclick="goBack()">⬅ חזור</button>
         <p>❌ לא נמצא מידע על המסכת: ${name}</p>
