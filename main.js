@@ -12,7 +12,7 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-
+import { toGemaraDaf } from "./gemaraRenderer.js";
 console.log("🚀 APP START");
 
 const appDiv = document.getElementById("app");
@@ -100,15 +100,44 @@ function loadMasechtot() {
 
 // ---------------- OPEN MASECHET ----------------
 window.openMasechet = function(name) {
+  const total = masechetPages[name];
+
+  if (!total) {
+    console.error("❌ no masechet data:", name);
+    return;
+  }
+
   appDiv.innerHTML = `
     <div class="card">
-      <button onclick="location.reload()">⬅ חזור</button>
-      <h2>${name}</h2>
-      <div id="loading">טוען...</div>
+<button onclick="goBack()">⬅ חזור</button>
+<h2>${name}</h2>
+      <div id="dapim"></div>
     </div>
   `;
 
-  console.log("📖 open:", name);
+  const container = document.getElementById("dapim");
+
+  const dapim = Array.from({ length: total }, (_, i) => {
+    const dafNumber = i + 2;
+
+    return `
+      <div class="card" style="display:flex; justify-content:space-between;">
+        <span>📄 דף ${toGemaraDaf(dafNumber)}</span>
+
+        <div>
+          <button onclick="markLearned('${name}','${toGemaraDaf(dafNumber)}')">✔ למדתי</button>
+          <button onclick="markSkipped('${name}','${toGemaraDaf(dafNumber)}')">⏭ דילגתי</button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = dapim.join("");
+};
+
+//הגדרת כפתור חזרה.
+window.goBack = function () {
+  renderApp(auth.currentUser);
 };
 
 // ---------------- PROGRESS (נשאיר ריק כרגע אם צריך) ----------------
