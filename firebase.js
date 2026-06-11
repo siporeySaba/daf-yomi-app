@@ -6,6 +6,9 @@ import {
   browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
+// 🔥 הוספה חדשה: Firestore
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyD51xwSJ2Z-xQtOmqVpYHIwjiE5NwGjNy4",
   authDomain: "daf-yomi-app-c8bf6.firebaseapp.com",
@@ -15,12 +18,15 @@ const firebaseConfig = {
   appId: "1:781781233558:web:5bc2c87e9f39e47bbd77b7"
 };
 
-console.log("🔥 Firebase file loaded");
-
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
 
-// חשוב לשמירת התחברות
+// 🔥 חשוב לשמירת התחברות
 setPersistence(auth, browserLocalPersistence);
+
+// 🔥 הוספה חדשה: DB
+export const db = getFirestore(app);
+
+console.log("🔥 Firebase ready");
