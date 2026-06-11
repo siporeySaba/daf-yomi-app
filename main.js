@@ -1,3 +1,10 @@
+import {
+  doc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+import { db } from "./firebase.js";
+
 import { auth, provider } from "./firebase.js";
 import {
   signInWithPopup,
