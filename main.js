@@ -16,69 +16,14 @@ import {
 console.log("🚀 APP START");
 
 const appDiv = document.getElementById("app");
-const DAF_YOMI_START = new Date("2020-01-05"); // תחילת מחזור עדכני (דוגמה)
-
-const dafYomi = [
-  { masechet: "ברכות", dapim: 63 },
-  { masechet: "שבת", dapim: 156 },
-  { masechet: "עירובין", dapim: 104 },
-  { masechet: "פסחים", dapim: 120 },
-  { masechet: "שקלים", dapim: 21 },
-  { masechet: "יומא", dapim: 87 },
-  { masechet: "סוכה", dapim: 55 },
-  { masechet: "ביצה", dapim: 39 },
-  { masechet: "ראש השנה", dapim: 34 },
-  { masechet: "תענית", dapim: 30 },
-  { masechet: "מגילה", dapim: 31 },
-  { masechet: "מועד קטן", dapim: 28 },
-  { masechet: "חגיגה", dapim: 26 }
-];
-
-const masechetPages = {
-  "ברכות": 64,
-  "שבת": 157,
-  "עירובין": 105,
-  "פסחים": 121,
-  "שקלים": 22,
-  "יומא": 88,
-  "סוכה": 56,
-  "ביצה": 40,
-  "ראש השנה": 35,
-  "תענית": 31,
-  "מגילה": 32,
-  "מועד קטן": 29,
-  "חגיגה": 27,
-  "יבמות": 122,
-  "כתובות": 112,
-  "נדרים": 91,
-  "נזיר": 66,
-  "סוטה": 49,
-  "גיטין": 90,
-  "קידושין": 82,
-  "בבא קמא": 119,
-  "בבא מציעא": 119,
-  "בבא בתרא": 176,
-  "סנהדרין": 113,
-  "מכות": 24,
-  "שבועות": 49,
-  "עבודה זרה": 76,
-  "הוריות": 14,
-  "זבחים": 120,
-  "מנחות": 110,
-  "חולין": 142,
-  "בכורות": 61,
-  "ערכין": 34,
-  "תמורה": 34,
-  "כריתות": 28,
-  "מעילה": 22,
-  "נדה": 73
-};
 
 // ---------------- LOGIN ----------------
 function renderLogin() {
   appDiv.innerHTML = `
-    <h2>דף יומי</h2>
-    <button id="loginBtn">התחבר עם Google</button>
+    <div style="padding:20px; text-align:center">
+      <h2>דף יומי</h2>
+      <button class="primary-btn" id="loginBtn">התחבר עם Google</button>
+    </div>
   `;
 
   document.getElementById("loginBtn").onclick = async () => {
@@ -88,223 +33,89 @@ function renderLogin() {
 
 // ---------------- APP ----------------
 function renderApp(user) {
-  console.log("👤 renderApp:", user.email);
+  appDiv.innerHTML = `
+    <div style="direction: rtl; padding:16px">
+      <div class="card">
+        <h2>שלום ${user.displayName}</h2>
+        <p>${user.email}</p>
 
-    appDiv.innerHTML = `
-  <div style="direction: rtl; max-width: 900px; margin: auto; padding: 20px">
+        <button id="todayBtn" class="primary-btn">📅 הדף היומי</button>
+        <button id="progressBtn" class="secondary-btn">📊 התקדמות</button>
+        <button id="logoutBtn" class="secondary-btn">התנתק</button>
+      </div>
 
-    <div class="card">
-      <h2>שלום ${user.displayName}</h2>
-      <p style="color:gray">${user.email}</p>
-
-      <button id="todayBtn" class="primary-btn">📅 הדף היומי</button>
-      <button id="progressBtn" class="secondary-btn">📊 התקדמות</button>
-      <button id="logoutBtn" class="secondary-btn">התנתק</button>
+      <h3>📚 מסכתות</h3>
+      <div id="masechtot"></div>
     </div>
+  `;
 
-    <h3>📚 מסכתות</h3>
-    <div id="masechtot"></div>
+  document.getElementById("logoutBtn").onclick = () => signOut(auth);
 
-  </div>
-`;
-
-  document.getElementById("todayBtn").onclick = () => {
-  console.log("📅 today button clicked");
-
-  const today = getTodayDafYomi();
-  if (!today) {
-    console.log("no today daf");
-    return;
-  }
-
-  openMasechet(today.masechet);
-
-  setTimeout(() => {
-    console.log("📖 navigating to daf", today);
-  }, 300);
-};
-  document.getElementById("logoutBtn").onclick = async () => {
-    await signOut(auth);
-  };
-
+  document.getElementById("todayBtn").onclick = loadTodayDaf;
   document.getElementById("progressBtn").onclick = loadProgress;
 
   loadMasechtot();
 }
 
-// ---------------- PROGRESS ----------------
-async function loadProgress() {
-  const user = auth.currentUser;
-  if (!user) return;
+// ---------------- API (הדף היומי) ----------------
+async function loadTodayDaf() {
+  try {
+    const today = new Date().toISOString().split("T")[0];
 
-  console.log("📊 loading progress...");
+    const res = await fetch(`https://www.hebcal.com/daf?cfg=json&date=${today}`);
+    const data = await res.json();
 
-  const snap = await getDocs(
-    collection(db, "users", user.uid, "progress")
-  );
+    const [masechet, daf] = data.hebrew.split(" ");
 
-  const data = {};
+    alert(`📅 היום: ${masechet} דף ${daf}`);
 
-  snap.forEach(d => {
-    const item = d.data();
-
-    if (!data[item.masechet]) {
-      data[item.masechet] = { learned: 0, skipped: 0 };
-    }
-
-    if (item.status === "learned") {
-      data[item.masechet].learned++;
-    } else {
-      data[item.masechet].skipped++;
-    }
-  });
-
-  renderProgress(data);
-}
-
-function renderProgress(data) {
-  let html = `
-    <div style="direction: rtl; font-family: Arial; padding: 16px">
-      <button onclick="location.reload()">⬅ חזור</button>
-      <h2>📊 ההתקדמות שלי</h2>
-  `;
-
-  for (const name in data) {
-    const d = data[name];
-    const total = masechetPages[name] || 1;
-    const percent = Math.round((d.learned / total) * 100);
-
-    html += `
-      <div style="border:1px solid #ccc; margin:10px; padding:10px; border-radius:8px;">
-        <h3>${name}</h3>
-        <p>✔ למדתי: ${d.learned}</p>
-        <p>⏭ דילגתי: ${d.skipped}</p>
-        <p>📊 התקדמות: ${percent}%</p>
-      </div>
-    `;
+    openMasechet(masechet);
+  } catch (e) {
+    console.error("API error:", e);
   }
-
-  html += `</div>`;
-  appDiv.innerHTML = html;
 }
 
 // ---------------- MASECHTOT ----------------
 function loadMasechtot() {
+  const list = [
+    "ברכות","שבת","עירובין","פסחים","שקלים",
+    "יומא","סוכה","ביצה","ראש השנה","תענית",
+    "מגילה","מועד קטן","חגיגה",
+    "יבמות","כתובות","נדרים","נזיר","סוטה",
+    "גיטין","קידושין",
+    "בבא קמא","בבא מציעא","בבא בתרא",
+    "סנהדרין","מכות","שבועות","עבודה זרה",
+    "הוריות","זבחים","מנחות","חולין","בכורות",
+    "ערכין","תמורה","כריתות","מעילה","נדה"
+  ];
+
   const container = document.getElementById("masechtot");
 
-  container.innerHTML = Object.keys(masechetPages)
-  .map(name => `
+  container.innerHTML = list.map(name => `
     <div class="card" onclick="openMasechet('${name}')">
-      <div style="font-weight:600; font-size:16px">📘 ${name}</div>
-      <div style="color:gray; font-size:13px">
-        ${masechetPages[name]} דפים
-      </div>
+      📘 ${name}
     </div>
   `).join("");
 }
 
-
-const dafYomiOrder = Object.keys(masechetPages).map(name => ({
-  masechet: name,
-  dapim: masechetPages[name]
-}));
-
-//הצגת הדף של היום על פי חישוב מתחילת המחזור
-async function getTodayDafYomi() {
-  const today = new Date().toISOString().split("T")[0];
-
-  const res = await fetch(`https://www.hebcal.com/daf?cfg=json&date=${today}`);
-  const data = await res.json();
-
-  return {
-    masechet: data.hebrew.split(" ")[0],
-    daf: data.hebrew.split(" ")[1]
-  };
-}
 // ---------------- OPEN MASECHET ----------------
 window.openMasechet = function(name) {
-  const total = masechetPages[name];
-
-  const dapim = Array.from(
-    { length: total },
-    (_, i) => `דף ${i + 1}`
-  );
-
   appDiv.innerHTML = `
-    <div style="direction: rtl; font-family: Arial; padding: 16px">
+    <div class="card">
       <button onclick="location.reload()">⬅ חזור</button>
-
       <h2>${name}</h2>
-      <p style="color:gray">${total} דפים</p>
-
-      <div id="dapim"></div>
+      <div id="loading">טוען...</div>
     </div>
   `;
 
-  document.getElementById("dapim").innerHTML = dapim.map(daf => `
-    <div class="card">
-  📄 ${daf}
-  <div style="margin-top:6px">
-    <button class="primary-btn" onclick="markLearned('${name}','${daf}')">✔ למדתי</button>
-    <button class="secondary-btn" onclick="markSkipped('${name}','${daf}')">⏭ דילגתי</button>
-  </div>
-</div>
-  `).join("");
+  console.log("📖 open:", name);
 };
 
-// ---------------- SAVE ----------------
-window.markLearned = async function(masechet, daf) {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  await setDoc(
-    doc(db, "users", user.uid, "progress", `${masechet}_${daf}`),
-    {
-      masechet,
-      daf,
-      status: "learned",
-      timestamp: Date.now()
-    }
-  );
-
-  showToast("✔ סומן: למדתי");
-
-  // סימון ויזואלי
-  const btn = event?.target;
-  if (btn) {
-    btn.innerText = "✔ נלמד";
-    btn.style.background = "#16a34a";
-    btn.style.color = "white";
-  }
-};
-window.markSkipped = async function(masechet, daf) {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  await setDoc(
-    doc(db, "users", user.uid, "progress", `${masechet}_${daf}`),
-    {
-      masechet,
-      daf,
-      status: "skipped",
-      timestamp: Date.now()
-    }
-  );
-
-  showToast("⏭ סומן: דילגת");
-};
-
-function showToast(text) {
-  const toast = document.getElementById("toast");
-  if (!toast) return;
-
-  toast.innerText = text;
-  toast.style.opacity = "1";
-
-  setTimeout(() => {
-    toast.style.opacity = "0";
-  }, 2000);
+// ---------------- PROGRESS (נשאיר ריק כרגע אם צריך) ----------------
+async function loadProgress() {
+  alert("עוד בשלב שדרוג");
 }
+
 // ---------------- AUTH ----------------
 onAuthStateChanged(auth, (user) => {
   if (user) renderApp(user);
