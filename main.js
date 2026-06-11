@@ -150,17 +150,42 @@ window.openMasechet = function(name) {
     </div>
   `).join("");
 };
-// ---------------- ACTIONS (בהמשך נשמור ב-Firebase) ----------------
-window.markLearned = function(masechet, daf) {
-  console.log("✔ learned:", masechet, daf);
-  alert("סומן כלמדתי (בינתיים רק דמו)");
+//שמירת למדתי
+
+window.markLearned = async function(masechet, daf) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  await setDoc(
+    doc(db, "users", user.uid, "progress", `${masechet}_${daf}`),
+    {
+      masechet,
+      daf,
+      status: "learned",
+      timestamp: Date.now()
+    }
+  );
+
+  console.log("✔ נשמר למדתי:", masechet, daf);
 };
 
-window.markSkipped = function(masechet, daf) {
-  console.log("⏭ skipped:", masechet, daf);
-  alert("סומן כדילגתי (בינתיים רק דמו)");
-};
+//שמירת דילגתי
+window.markSkipped = async function(masechet, daf) {
+  const user = auth.currentUser;
+  if (!user) return;
 
+  await setDoc(
+    doc(db, "users", user.uid, "progress", `${masechet}_${daf}`),
+    {
+      masechet,
+      daf,
+      status: "skipped",
+      timestamp: Date.now()
+    }
+  );
+
+  console.log("⏭ נשמר דילוג:", masechet, daf);
+};
 // ---------------- AUTH ----------------
 onAuthStateChanged(auth, (user) => {
   if (user) renderApp(user);
