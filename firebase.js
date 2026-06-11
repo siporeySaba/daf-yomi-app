@@ -1,10 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import {
-  getAuth,
-  GoogleAuthProvider,
-  setPersistence,
-  browserLocalPersistence
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD51xwSJ2Z-xQtOmqVpYHIwjiE5NwGjNy4",
@@ -15,9 +10,7 @@ const firebaseConfig = {
   appId: "1:781781233558:web:5bc2c87e9f39e47bbd77b7"
 };
 
-export const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
-
-// 🔥 זה מה שמונע התנתקות ברענון
-setPersistence(auth, browserLocalPersistence);
