@@ -210,31 +210,16 @@ const dafYomiOrder = Object.keys(masechetPages).map(name => ({
 }));
 
 //הצגת הדף של היום על פי חישוב מתחילת המחזור
-function getTodayDafYomi() {
-  const startDate = new Date("2020-01-05"); // תחילת מחזור
-  const today = new Date();
+async function getTodayDafYomi() {
+  const today = new Date().toISOString().split("T")[0];
 
-  const diffDays = Math.floor(
-    (today - startDate) / (1000 * 60 * 60 * 24)
-  );
+  const res = await fetch(`https://www.hebcal.com/daf?cfg=json&date=${today}`);
+  const data = await res.json();
 
-  let counter = diffDays;
-
-  for (const m of dafYomiOrder) {
-    if (counter < m.dapim) {
-      return {
-        masechet: m.masechet,
-        daf: counter + 1
-      };
-    }
-    counter -= m.dapim;
-  }
-
-  // אם עבר הכל (לא אמור לקרות)
-  return dafYomiOrder[0] ? {
-    masechet: dafYomiOrder[0].masechet,
-    daf: 1
-  } : null;
+  return {
+    masechet: data.hebrew.split(" ")[0],
+    daf: data.hebrew.split(" ")[1]
+  };
 }
 // ---------------- OPEN MASECHET ----------------
 window.openMasechet = function(name) {
