@@ -7,7 +7,7 @@ import {
 
 const appDiv = document.getElementById("app");
 
-// מסך התחברות
+// התחברות
 function renderLogin() {
   appDiv.innerHTML = `
     <h2>דף יומי</h2>
@@ -35,7 +35,7 @@ function renderApp(user) {
   loadMasechtot();
 }
 
-// רשימת מסכתות
+// מסכתות
 function loadMasechtot() {
   const masechtot = [
     "ברכות","שבת","עירובין","פסחים","שקלים",
