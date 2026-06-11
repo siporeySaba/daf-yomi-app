@@ -138,7 +138,7 @@ window.masechetPages = masechetPages;
         </div>
       </div>
     `;
-  });
+  
 
   container.innerHTML = dapim.join("");
 };
