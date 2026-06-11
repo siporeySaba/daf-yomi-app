@@ -58,6 +58,9 @@ function loadMasechtot() {
 }
 
 onAuthStateChanged(auth, (user) => {
-  if (user) renderApp(user);
-  else renderLogin();
+  if (user) {
+    renderApp(user);   // נשאר מחובר
+  } else {
+    renderLogin();     // רק אם אין משתמש
+  }
 });
