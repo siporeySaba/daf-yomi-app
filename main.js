@@ -107,8 +107,6 @@ document.getElementById("progressBtn").onclick = () => {
   loadProgress();
 };
 
-};
-
 //קריאת נתונים מה DB
 async function loadProgress() {
   const user = auth.currentUser;
