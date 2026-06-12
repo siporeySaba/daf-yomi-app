@@ -146,7 +146,7 @@ window.openMasechet = function(name) {
     const dafNumber = i + 2;
 
     return `
-      <div class="card" style="display:flex; justify-content:space-between;">
+<div class="card" style="display:flex; justify-content:space-between; direction:rtl;">
         <span>📄 דף ${toGemaraDaf(dafNumber)}</span>
 
         <div>
