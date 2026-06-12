@@ -160,8 +160,8 @@ const dapim = Array.from({ length: total - 1 }, (_, i) => {
                   : status === "skipped" ? "#fee2e2" 
                   : "white";
 
-    const badge = status === "learned" ? `<span style="color:#059669">✅ נלמד</span>`
-                : status === "skipped" ? `<span style="color:#dc2626">⏭ דולג</span>`
+    const badge = status === "learned" ? `<span style="color:#059669">✅ הדף נלמד</span>`
+                : status === "skipped" ? `<span style="color:#dc2626">⏭ יש להשלים דף זה</span>`
                 : "";
 
     return `
@@ -206,7 +206,7 @@ async function saveDafStatus(masechet, daf, status) {
     timestamp: new Date().toISOString()
   });
 
-  showToast(status === "learned" ? "✅ סומן כנלמד" : "⏭ סומן כדולג");
+  showToast(status === "learned" ? "✅ כל הכבוד, עוד דף לאוסף" : "⏭ בעזרת ה' תזכה להשלים");
 }
 
 // ---------------- BACK ----------------
