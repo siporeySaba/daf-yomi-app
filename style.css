@@ -122,8 +122,10 @@ height:100%;
 background:#22c55e;
 
 transition:.3s;
+transition: width 0.3s ease;
 
 }
+
 
 /* =========================
    LIST ITEMS
