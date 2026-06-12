@@ -150,6 +150,12 @@ window.openMasechet = async function(name) {
       saved[data.daf] = data.status;
     }
   });
+  const learnedCount = Object.values(saved)
+  .filter(v => v === "learned")
+  .length;
+
+const percent = Math.round((learnedCount / (total - 1)) * 100);
+  
 
 const dapim = Array.from({ length: total - 1 }, (_, i) => {
     const dafNumber = i + 2;
@@ -160,9 +166,7 @@ const dapim = Array.from({ length: total - 1 }, (_, i) => {
                   : status === "skipped" ? "#fee2e2" 
                   : "white";
 
-    const badge = status === "learned" ? `<span style="color:#059669">✅ הדף נלמד</span>`
-                : status === "skipped" ? `<span style="color:#dc2626">⏭ יש להשלים דף זה</span>`
-                : "";
+    const badge = "";
 
     return `
       <div class="card" style="display:flex; justify-content:space-between; direction:rtl; background:${bgColor}">
@@ -176,13 +180,52 @@ const dapim = Array.from({ length: total - 1 }, (_, i) => {
   });
 
   appDiv.innerHTML = `
-    <div class="card">
-      <button onclick="goBack()">⬅ חזור</button>
-      <h2>${name}</h2>
-      <div>${dapim.join("")}</div>
+<div style="direction:rtl">
+
+<div class="stickyHeader">
+
+  <button onclick="goBack()">
+    ⬅ חזרה
+  </button>
+
+  <div style="flex:1">
+
+    <h2>${name}</h2>
+
+    <div class="progressOuter">
+      <div
+        class="progressInner"
+        style="width:${percent}%">
+      </div>
     </div>
-  `;
-};
+
+    <small>
+      ${learnedCount} / ${total - 1} דפים (${percent}%)
+    </small>
+
+  </div>
+
+  <button onclick="markAll('${name}','learned')">
+    ✅
+  </button>
+
+  <button onclick="markAll('${name}','skipped')">
+    ⏭
+  </button>
+
+</div>
+
+  <div style="padding-top:70px">
+
+    <h2>${name}</h2>
+
+    ${dapim.join("")}
+
+  </div>
+
+</div>
+`;
+  
 // ---------------- MARK DAF ----------------
 window.markLearned = async function(masechet, daf) {
   await saveDafStatus(masechet, daf, "learned");
