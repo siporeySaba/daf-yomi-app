@@ -127,10 +127,9 @@ function loadMasechtot() {
 }
 
 // ---------------- OPEN MASECHET ----------------
-window.openMasechet = function(name) {
+window.openMasechet = async function(name) {
   const total = masechetPages[name];
-
-  console.log("📖 open:", name, "total:", total);
+  const user = auth.currentUser;
 
   if (!total) {
     appDiv.innerHTML = `
@@ -142,16 +141,35 @@ window.openMasechet = function(name) {
     return;
   }
 
+  // טעינת סטטוס קיים מ-Firestore
+  const progressSnap = await getDocs(collection(db, "users", user.uid, "progress"));
+  const saved = {};
+  progressSnap.forEach(d => {
+    const data = d.data();
+    if (data.masechet === name) {
+      saved[data.daf] = data.status;
+    }
+  });
+
   const dapim = Array.from({ length: total }, (_, i) => {
     const dafNumber = i + 2;
+    const dafStr = toGemaraDaf(dafNumber);
+    const status = saved[dafStr];
+
+    const bgColor = status === "learned" ? "#d1fae5" 
+                  : status === "skipped" ? "#fee2e2" 
+                  : "white";
+
+    const badge = status === "learned" ? `<span style="color:#059669">✅ נלמד</span>`
+                : status === "skipped" ? `<span style="color:#dc2626">⏭ דולג</span>`
+                : "";
 
     return `
-<div class="card" style="display:flex; justify-content:space-between; direction:rtl;">
-        <span>📄 דף ${toGemaraDaf(dafNumber)}</span>
-
+      <div class="card" style="display:flex; justify-content:space-between; direction:rtl; background:${bgColor}">
+        <span>📄 דף ${dafStr} ${badge}</span>
         <div>
-          <button onclick="markLearned('${name}','${toGemaraDaf(dafNumber)}')">✔ למדתי</button>
-          <button onclick="markSkipped('${name}','${toGemaraDaf(dafNumber)}')">⏭ דילגתי</button>
+          <button onclick="markLearned('${name}','${dafStr}')">✔ למדתי</button>
+          <button onclick="markSkipped('${name}','${dafStr}')">⏭ דילגתי</button>
         </div>
       </div>
     `;
@@ -165,6 +183,31 @@ window.openMasechet = function(name) {
     </div>
   `;
 };
+// ---------------- MARK DAF ----------------
+window.markLearned = async function(masechet, daf) {
+  await saveDafStatus(masechet, daf, "learned");
+  await openMasechet(masechet);
+};
+
+window.markSkipped = async function(masechet, daf) {
+  await saveDafStatus(masechet, daf, "skipped");
+  await openMasechet(masechet);
+};
+
+async function saveDafStatus(masechet, daf, status) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const ref = doc(db, "users", user.uid, "progress", `${masechet}_${daf}`);
+  await setDoc(ref, {
+    masechet,
+    daf,
+    status,
+    timestamp: new Date().toISOString()
+  });
+
+  showToast(status === "learned" ? "✅ סומן כנלמד" : "⏭ סומן כדולג");
+}
 
 // ---------------- BACK ----------------
 window.goBack = function () {
