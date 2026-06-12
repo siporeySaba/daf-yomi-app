@@ -151,7 +151,7 @@ window.openMasechet = async function(name) {
     }
   });
 
-  const dapim = Array.from({ length: total }, (_, i) => {
+const dapim = Array.from({ length: total - 1 }, (_, i) => {
     const dafNumber = i + 2;
     const dafStr = toGemaraDaf(dafNumber);
     const status = saved[dafStr];
