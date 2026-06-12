@@ -94,8 +94,9 @@ function renderApp(user) {
 
   document.getElementById("logoutBtn").onclick = () => signOut(auth);
   document.getElementById("todayBtn").onclick = loadTodayDaf;
-  document.getElementById("progressBtn").onclick = loadProgress;
-
+document.getElementById("progressBtn").onclick = () => {
+  showToast("מסך התקדמות בקרוב...");
+};
   loadMasechtot();
 }
 
@@ -169,6 +170,13 @@ window.openMasechet = function(name) {
 window.goBack = function () {
   renderApp(auth.currentUser);
 };
+//-------------showToast------------
+function showToast(msg) {
+  const toast = document.getElementById("toast");
+  toast.textContent = msg;
+  toast.style.opacity = "1";
+  setTimeout(() => toast.style.opacity = "0", 2500);
+}
 
 // ---------------- AUTH ----------------
 onAuthStateChanged(auth, (user) => {
