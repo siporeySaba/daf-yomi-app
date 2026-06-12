@@ -169,14 +169,21 @@ const dapim = Array.from({ length: total - 1 }, (_, i) => {
     const badge = "";
 
     return `
-      <div class="card" style="display:flex; justify-content:space-between; direction:rtl; background:${bgColor}">
-        <span>📄 דף ${dafStr} ${badge}</span>
-        <div>
-          <button onclick="markLearned('${name}','${dafStr}')">✔ למדתי</button>
-          <button onclick="markSkipped('${name}','${dafStr}')">⏭ דילגתי</button>
-        </div>
-      </div>
-    `;
+    <div id="card-${dafStr}"
+    class="card"
+    style="display:flex; justify-content:space-between; direction:rtl;">
+
+    <span id="text-${dafStr}">
+      📄 דף ${dafStr}
+    </span>
+
+    <div>
+      <button onclick="markLearned('${name}','${dafStr}')">✔ למדתי</button>
+      <button onclick="markSkipped('${name}','${dafStr}')">⏭ דילגתי</button>
+    </div>
+
+  </div>
+`;
   });
 
   appDiv.innerHTML = `
@@ -195,13 +202,14 @@ const dapim = Array.from({ length: total - 1 }, (_, i) => {
     <div class="progressOuter">
       <div
         class="progressInner"
+          id="progressBar"
         style="width:${percent}%">
       </div>
     </div>
 
-    <small>
-      ${learnedCount} / ${total - 1} דפים (${percent}%)
-    </small>
+    <small id="progressText">
+  ${learnedCount} / ${total - 1} דפים (${percent}%)
+</small>
 
   </div>
 
@@ -229,14 +237,41 @@ const dapim = Array.from({ length: total - 1 }, (_, i) => {
 // ---------------- MARK DAF ----------------
 window.markLearned = async function(masechet, daf) {
   await saveDafStatus(masechet, daf, "learned");
-  await openMasechet(masechet);
+
+  updateCardUI(daf, "learned");
+
+  updateProgressUI(masechet);
 };
 
 window.markSkipped = async function(masechet, daf) {
   await saveDafStatus(masechet, daf, "skipped");
-  await openMasechet(masechet);
-};
 
+  updateCardUI(daf, "skipped");
+
+  updateProgressUI(masechet);
+};
+// update progress bar
+  function updateProgressUI(masechet) {
+  const cards = document.querySelectorAll(`[id^="card-"]`);
+
+  let learned = 0;
+
+  cards.forEach(c => {
+    if (c.style.background === "rgb(209, 250, 229)") {
+      learned++;
+    }
+  });
+
+  const total = masechetPages[masechet] - 1;
+  const percent = Math.round((learned / total) * 100);
+
+  const header = document.getElementById("progressHeader");
+
+  if (header) {
+    header.innerText = `📊 ${learned}/${total} (${percent}%)`;
+  }
+  }
+  
 async function saveDafStatus(masechet, daf, status) {
   const user = auth.currentUser;
   if (!user) return;
@@ -252,6 +287,19 @@ async function saveDafStatus(masechet, daf, status) {
   showToast(status === "learned" ? "✅ כל הכבוד, עוד דף לאוסף" : "⏭ בעזרת ה' תזכה להשלים");
 }
 
+  // update card
+  function updateCardUI(daf, status) {
+  const card = document.getElementById(`card-${daf}`);
+  const text = document.getElementById(`text-${daf}`);
+
+  if (!card || !text) return;
+
+  if (status === "learned") {
+    card.style.background = "#d1fae5";
+  } else {
+    card.style.background = "#fee2e2";
+  }
+  }
 // ---------------- BACK ----------------
 window.goBack = function () {
   renderApp(auth.currentUser);
