@@ -79,6 +79,52 @@ button:hover {
   color: #111827;
 }
 
+.stickyHeader{
+
+position:sticky;
+
+top:0;
+
+background:white;
+
+padding:12px;
+
+display:flex;
+
+gap:10px;
+
+align-items:center;
+
+box-shadow:0 3px 10px rgba(0,0,0,.08);
+
+z-index:999;
+
+}
+
+.progressOuter{
+
+height:10px;
+
+background:#e5e7eb;
+
+border-radius:20px;
+
+overflow:hidden;
+
+margin:8px 0;
+
+}
+
+.progressInner{
+
+height:100%;
+
+background:#22c55e;
+
+transition:.3s;
+
+}
+
 /* =========================
    LIST ITEMS
 ========================= */
