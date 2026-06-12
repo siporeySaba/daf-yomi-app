@@ -111,7 +111,7 @@ async function loadTodayDaf() {
 
   alert(`📅 היום: ${masechet} דף ${daf}`);
 
-  openMasechet(masechet);
+  openMasechet(masechet, daf);
 }
 
 // ---------------- MASECHTOT ----------------
@@ -127,10 +127,9 @@ function loadMasechtot() {
 }
 
 // ---------------- OPEN MASECHET ----------------
-window.openMasechet = async function(name) {
-  const total = masechetPages[name];
+window.openMasechet = async function(name, focusDaf = null) {
   const user = auth.currentUser;
-
+  const total = masechetPages[name];
   if (!total) {
     appDiv.innerHTML = `
       <div class="card">
@@ -233,6 +232,21 @@ const dapim = Array.from({ length: total - 1 }, (_, i) => {
 
 </div>
 `;
+
+  if (focusDaf) {
+  setTimeout(() => {
+    const el = document.getElementById(`card-${focusDaf}`);
+
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+      el.style.background = "#fef08a";
+    }
+  }, 100);
+}
   
 // ---------------- MARK DAF ----------------
 window.markLearned = async function(masechet, daf) {
