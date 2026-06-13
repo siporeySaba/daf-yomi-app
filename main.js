@@ -103,13 +103,15 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    const res = await fetch("https://www.shas.org/api/daf-yomi");
+    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+    const apiUrl = "https://www.shas.org/api/daf-yomi";
+    
+    const res = await fetch(proxyUrl + apiUrl);
     const data = await res.json();
     
     console.log("Daf info:", data);
     
     if (data.current_daf) {
-      // המרת האנגלית לעברית
       const masechetMap = {
         "Brachot": "ברכות",
         "Shabbat": "שבת",
@@ -157,7 +159,6 @@ async function loadTodayDaf() {
       const daf = data.current_daf.daf;
       const focusDaf = `דף ${toGemaraDaf(daf)}`;
       
-      console.log("Opening:", masechet, focusDaf);
       await openMasechet(masechet, focusDaf);
     } else {
       showToast("לא הצליח לטעון את הדף היומי");
