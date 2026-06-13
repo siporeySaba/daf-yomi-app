@@ -103,35 +103,17 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    const cycleStart = new Date(1923, 8, 23);
     const today = new Date();
+    const dafinfo = HebCal.getDafYomi(today);
     
-    const daysPassed = Math.floor((today - cycleStart) / (1000 * 60 * 60 * 24));
-    const dayInCycle = daysPassed % 2711;
-    
-    console.log("Days passed:", daysPassed, "Day in cycle:", dayInCycle);
-
-    // שתמש בmasechetPages שכבר יש לך
-    const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
-
-    let currentDay = 0;
-    for (let m of masechtosList) {
-      const dapimCount = m.dapim - 1;
-      console.log(`${m.name}: ${currentDay} - ${currentDay + dapimCount}`);
-      
-      if (currentDay + dapimCount > dayInCycle) {
-        const dafNumber = dayInCycle - currentDay + 2;
-        console.log(`Found: ${m.name} דף ${dafNumber}`);
-        await openMasechet(m.name, `דף ${toGemaraDaf(dafNumber)}`);
-        return;
-      }
-      currentDay += dapimCount;
+    if (dafinfo) {
+      await openMasechet(dafinfo.name, `דף ${dafinfo.daf}`);
+    } else {
+      showToast("לא הצליח לטעון את הדף היומי");
     }
-
-    showToast("שגיאה בחישוב הדף היומי");
   } catch (err) {
     console.error("Error:", err);
-    showToast("שגיאה בחישוב הדף היומי");
+    showToast("שגיאה בטעינת הדף היומי");
   }
 }
 // ---------------- MASECHTOT ----------------
