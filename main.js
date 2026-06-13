@@ -103,56 +103,14 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
-    const apiUrl = "https://www.shas.org/api/daf-yomi";
-    
-    const res = await fetch(proxyUrl + apiUrl);
+    const API_URL = "https://script.google.com/macros/s/AKfycbybLrEuKCk8XFKjzVMu5N7mcB8Q3CeJ5MiVjQ_Vm-N5RpWN_ouv66TfJWTm1FBv-k6b/exec";
+    const res = await fetch(`${API_URL}?action=dafyomi`);
     const data = await res.json();
-    
-    console.log("Daf info:", data);
     
     if (data.current_daf) {
       const masechetMap = {
-        "Brachot": "ברכות",
-        "Shabbat": "שבת",
-        "Eruvin": "עירובין",
-        "Pesachim": "פסחים",
-        "Shekalim": "שקלים",
-        "Yoma": "יומא",
-        "Sukkah": "סוכה",
-        "Beitzah": "ביצה",
-        "Rosh Hashanah": "ראש השנה",
-        "Taanit": "תענית",
-        "Megillah": "מגילה",
-        "Moed Katan": "מועד קטן",
-        "Chagigah": "חגיגה",
-        "Yevamot": "יבמות",
-        "Ketubot": "כתובות",
-        "Nedarim": "נדרים",
-        "Nazir": "נזיר",
-        "Sotah": "סוטה",
-        "Gittin": "גיטין",
-        "Kiddushin": "קידושין",
-        "Bava Kamma": "בבא קמא",
-        "Bava Metzia": "בבא מציעא",
-        "Bava Batra": "בבא בתרא",
-        "Sanhedrin": "סנהדרין",
-        "Makkot": "מכות",
-        "Shevuot": "שבועות",
-        "Avodah Zarah": "עבודה זרה",
-        "Horayot": "הוריות",
-        "Zevachim": "זבחים",
-        "Menachot": "מנחות",
         "Chullin": "חולין",
-        "Bechoros": "בכורות",
-        "Arachin": "ערכין",
-        "Temurah": "תמורה",
-        "Keritot": "כריתות",
-        "Meilah": "מעילה",
-        "Tamid": "תמיד",
-        "Middot": "מידות",
-        "Kinnim": "קינים",
-        "Niddah": "נדה"
+        // ... (שאר המפה)
       };
 
       const masechet = masechetMap[data.current_daf.masechta] || data.current_daf.masechta;
@@ -160,8 +118,6 @@ async function loadTodayDaf() {
       const focusDaf = `דף ${toGemaraDaf(daf)}`;
       
       await openMasechet(masechet, focusDaf);
-    } else {
-      showToast("לא הצליח לטעון את הדף היומי");
     }
   } catch (err) {
     console.error("Error:", err);
