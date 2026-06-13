@@ -103,20 +103,26 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    if (typeof HebCal === 'undefined') {
-      showToast("טוען ספריית דף יומי...");
-      setTimeout(() => loadTodayDaf(), 500);
+    // טען את ספריית hebcal דינמית
+    if (typeof window.HebCal === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://www.hebcal.com/dist/hebcal.min.js';
+      script.onload = () => {
+        console.log("HebCal loaded");
+        loadTodayDaf(); // קרא שוב אחרי טעינה
+      };
+      document.head.appendChild(script);
       return;
     }
 
     const today = new Date();
-    const dafinfo = HebCal.getDafYomi(today);
+    const dafinfo = window.HebCal.getDafYomi(today);
     
-    console.log("Daf info:", dafinfo); // כדי לראות מה בדיוק חוזר
+    console.log("Daf info:", dafinfo);
     
     if (dafinfo) {
       const focusDaf = `דף ${dafinfo.daf}`;
-      console.log("Focus daf:", focusDaf); // בדוק מה יש כאן
+      console.log("Focus daf:", focusDaf);
       await openMasechet(dafinfo.name, focusDaf);
     } else {
       showToast("לא הצליח לטעון את הדף היומי");
