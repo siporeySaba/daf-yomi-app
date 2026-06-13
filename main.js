@@ -103,63 +103,25 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    // מחזור דף יומי = 2711 ימים
-    const cycleStart = new Date(1923, 8, 23); // 23 בספטמבר 1923 - התחלת המחזור הראשון
+    const cycleStart = new Date(1923, 8, 23);
     const today = new Date();
     
     const daysPassed = Math.floor((today - cycleStart) / (1000 * 60 * 60 * 24));
     const dayInCycle = daysPassed % 2711;
     
-    // מערך כל המסכתות בסדר דף יומי
-    const masechtos = [
-      { name: "ברכות", dapim: 64 },
-      { name: "שבת", dapim: 157 },
-      { name: "עירובין", dapim: 105 },
-      { name: "פסחים", dapim: 121 },
-      { name: "שקלים", dapim: 22 },
-      { name: "יומא", dapim: 88 },
-      { name: "סוכה", dapim: 56 },
-      { name: "ביצה", dapim: 40 },
-      { name: "ראש השנה", dapim: 35 },
-      { name: "תענית", dapim: 31 },
-      { name: "מגילה", dapim: 32 },
-      { name: "מועד קטן", dapim: 29 },
-      { name: "חגיגה", dapim: 27 },
-      { name: "יבמות", dapim: 122 },
-      { name: "כתובות", dapim: 112 },
-      { name: "נדרים", dapim: 91 },
-      { name: "נזיר", dapim: 66 },
-      { name: "סוטה", dapim: 49 },
-      { name: "גיטין", dapim: 90 },
-      { name: "קידושין", dapim: 82 },
-      { name: "בבא קמא", dapim: 119 },
-      { name: "בבא מציעא", dapim: 119 },
-      { name: "בבא בתרא", dapim: 176 },
-      { name: "סנהדרין", dapim: 113 },
-      { name: "מכות", dapim: 24 },
-      { name: "שבועות", dapim: 49 },
-      { name: "עבודה זרה", dapim: 76 },
-      { name: "הוריות", dapim: 14 },
-      { name: "זבחים", dapim: 120 },
-      { name: "מנחות", dapim: 110 },
-      { name: "חולין", dapim: 142 },
-      { name: "בכורות", dapim: 61 },
-      { name: "ערכין", dapim: 34 },
-      { name: "תמורה", dapim: 34 },
-      { name: "כריתות", dapim: 28 },
-      { name: "מעילה", dapim: 22 },
-      { name: "תמיד", dapim: 10 },
-      { name: "מידות", dapim: 4 },
-      { name: "קינים", dapim: 4 },
-      { name: "נדה", dapim: 73 }
-    ];
+    console.log("Days passed:", daysPassed, "Day in cycle:", dayInCycle);
 
-    // מצא את המסכת והדף הנוכחי
+    // שתמש בmasechetPages שכבר יש לך
+    const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
+
     let currentDay = 0;
-    for (let m of masechtos) {
-      const dapimCount = m.dapim - 1; // מדף 2 עד הסוף
+    for (let m of masechtosList) {
+      const dapimCount = m.dapim - 1;
+      console.log(`${m.name}: ${currentDay} - ${currentDay + dapimCount}`);
+      
       if (currentDay + dapimCount > dayInCycle) {
         const dafNumber = dayInCycle - currentDay + 2;
+        console.log(`Found: ${m.name} דף ${dafNumber}`);
         await openMasechet(m.name, `דף ${toGemaraDaf(dafNumber)}`);
         return;
       }
@@ -226,6 +188,7 @@ window.openMasechet = async function(name, focusDaf = null) {
     return `
       <div id="card-${dafStr}"
         class="card"
+         data-status="${status}"
         style="display:flex; justify-content:space-between; direction:rtl; background:${bgColor}">
         <span id="text-${dafStr}">
           📄 דף ${dafStr}
@@ -272,19 +235,25 @@ window.openMasechet = async function(name, focusDaf = null) {
   `;
 
   if (focusDaf) {
-    setTimeout(() => {
-      const el = document.getElementById(`card-${focusDaf}`);
+  setTimeout(() => {
+    const el = document.getElementById(`card-${focusDaf}`);
 
-      if (el) {
-        el.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
 
-        el.style.background = "#fef08a";
-      }
-    }, 100);
-  }
+      el.style.background = "#fef08a";
+      el.style.transition = "background 2s ease";
+      
+      setTimeout(() => {
+        const status = el.getAttribute("data-status");
+        el.style.background = status === "learned" ? "#d1fae5" : status === "skipped" ? "#fee2e2" : "white";
+      }, 2000);
+    }
+  }, 100);
+}
 };
 
 // ---------------- MARK DAF ----------------
