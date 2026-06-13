@@ -103,7 +103,7 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    const API_URL = "https://script.google.com/macros/s/AKfycbybLrEuKCk8XFKjzVMu5N7mcB8Q3CeJ5MiVjQ_Vm-N5RpWN_ouv66TfJWTm1FBv-k6b/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzDFwGe8HCqBibs2i8WvwCWNLmbdTVZ7P_oeeHdCEHzHTQWmQQZdciKf0ZrPSaOdkep/exec";
     const res = await fetch(`${API_URL}?action=dafyomi`);
     const data = await res.json();
     
