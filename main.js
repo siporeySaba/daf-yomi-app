@@ -102,16 +102,18 @@ function renderApp(user) {
 
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
-  const today = new Date().toISOString().split("T")[0];
+  try {
+    const res = await fetch("https://www.shas.org/api/dafyomi");
+    const data = await res.json();
 
-  const res = await fetch(`https://www.hebcal.com/daf?cfg=json&date=${today}`);
-  const data = await res.json();
+    const masechet = data.hebrew.masechet;
+    const daf = data.hebrew.daf;
 
-  const [masechet, daf] = data.hebrew.split(" ");
-
-  alert(`📅 היום: ${masechet} דף ${daf}`);
-
-  await openMasechet(masechet, daf);
+    await openMasechet(masechet, `דף ${daf}`);
+  } catch (err) {
+    console.error("Error:", err);
+    showToast("שגיאה בטעינת הדף היומי");
+  }
 }
 
 // ---------------- MASECHTOT ----------------
@@ -251,7 +253,7 @@ window.markAll = async function(masechet, status) {
   const cards = document.querySelectorAll(`[id^="card-"]`);
 
   // סימון כל דף
-  for (let i = 2; i < total; i++) {
+  for (let i = 2; i =< total; i++) {
     const dafStr = toGemaraDaf(i);
     const ref = doc(db, "users", user.uid, "progress", `${masechet}_${dafStr}`);
     await setDoc(ref, {
