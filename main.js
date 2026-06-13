@@ -103,22 +103,73 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    const today = new Date().toISOString().split("T")[0];
-    const res = await fetch(`https://www.hebcal.com/daf?cfg=json&date=${today}`);
-    const data = await res.json();
+    // מחזור דף יומי = 2711 ימים
+    const cycleStart = new Date(1923, 8, 23); // 23 בספטמבר 1923 - התחלת המחזור הראשון
+    const today = new Date();
+    
+    const daysPassed = Math.floor((today - cycleStart) / (1000 * 60 * 60 * 24));
+    const dayInCycle = daysPassed % 2711;
+    
+    // מערך כל המסכתות בסדר דף יומי
+    const masechtos = [
+      { name: "ברכות", dapim: 64 },
+      { name: "שבת", dapim: 157 },
+      { name: "עירובין", dapim: 105 },
+      { name: "פסחים", dapim: 121 },
+      { name: "שקלים", dapim: 22 },
+      { name: "יומא", dapim: 88 },
+      { name: "סוכה", dapim: 56 },
+      { name: "ביצה", dapim: 40 },
+      { name: "ראש השנה", dapim: 35 },
+      { name: "תענית", dapim: 31 },
+      { name: "מגילה", dapim: 32 },
+      { name: "מועד קטן", dapim: 29 },
+      { name: "חגיגה", dapim: 27 },
+      { name: "יבמות", dapim: 122 },
+      { name: "כתובות", dapim: 112 },
+      { name: "נדרים", dapim: 91 },
+      { name: "נזיר", dapim: 66 },
+      { name: "סוטה", dapim: 49 },
+      { name: "גיטין", dapim: 90 },
+      { name: "קידושין", dapim: 82 },
+      { name: "בבא קמא", dapim: 119 },
+      { name: "בבא מציעא", dapim: 119 },
+      { name: "בבא בתרא", dapim: 176 },
+      { name: "סנהדרין", dapim: 113 },
+      { name: "מכות", dapim: 24 },
+      { name: "שבועות", dapim: 49 },
+      { name: "עבודה זרה", dapim: 76 },
+      { name: "הוריות", dapim: 14 },
+      { name: "זבחים", dapim: 120 },
+      { name: "מנחות", dapim: 110 },
+      { name: "חולין", dapim: 142 },
+      { name: "בכורות", dapim: 61 },
+      { name: "ערכין", dapim: 34 },
+      { name: "תמורה", dapim: 34 },
+      { name: "כריתות", dapim: 28 },
+      { name: "מעילה", dapim: 22 },
+      { name: "תמיד", dapim: 10 },
+      { name: "מידות", dapim: 4 },
+      { name: "קינים", dapim: 4 },
+      { name: "נדה", dapim: 73 }
+    ];
 
-    if (data.item && data.item.hebrew) {
-      const parts = data.item.hebrew.split(" ");
-      const masechet = parts[0];
-      const daf = parts[1];
-
-      await openMasechet(masechet, `דף ${daf}`);
-    } else {
-      showToast("לא הצליח לטעון את הדף היומי");
+    // מצא את המסכת והדף הנוכחי
+    let currentDay = 0;
+    for (let m of masechtos) {
+      const dapimCount = m.dapim - 1; // מדף 2 עד הסוף
+      if (currentDay + dapimCount > dayInCycle) {
+        const dafNumber = dayInCycle - currentDay + 2;
+        await openMasechet(m.name, `דף ${toGemaraDaf(dafNumber)}`);
+        return;
+      }
+      currentDay += dapimCount;
     }
+
+    showToast("שגיאה בחישוב הדף היומי");
   } catch (err) {
     console.error("Error:", err);
-    showToast("שגיאה בטעינת הדף היומי");
+    showToast("שגיאה בחישוב הדף היומי");
   }
 }
 // ---------------- MASECHTOT ----------------
