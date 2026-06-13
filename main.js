@@ -103,13 +103,19 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    const res = await fetch("https://www.shas.org/api/dafyomi");
+    const today = new Date().toISOString().split("T")[0];
+    const res = await fetch(`https://www.hebcal.com/daf?cfg=json&date=${today}`);
     const data = await res.json();
 
-    const masechet = data.masechet; // בלי .hebrew
-    const daf = data.daf; // בלי .hebrew
+    if (data.item && data.item.hebrew) {
+      const parts = data.item.hebrew.split(" ");
+      const masechet = parts[0];
+      const daf = parts[1];
 
-    await openMasechet(masechet, `דף ${daf}`);
+      await openMasechet(masechet, `דף ${daf}`);
+    } else {
+      showToast("לא הצליח לטעון את הדף היומי");
+    }
   } catch (err) {
     console.error("Error:", err);
     showToast("שגיאה בטעינת הדף היומי");
