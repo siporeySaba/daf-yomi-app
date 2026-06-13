@@ -94,9 +94,9 @@ function renderApp(user) {
 
   document.getElementById("logoutBtn").onclick = () => signOut(auth);
   document.getElementById("todayBtn").onclick = loadTodayDaf;
-document.getElementById("progressBtn").onclick = () => {
-  showToast("מסך התקדמות בקרוב...");
-};
+  document.getElementById("progressBtn").onclick = () => {
+    showToast("מסך התקדמות בקרוב...");
+  };
   loadMasechtot();
 }
 
@@ -111,7 +111,7 @@ async function loadTodayDaf() {
 
   alert(`📅 היום: ${masechet} דף ${daf}`);
 
-  openMasechet(masechet, daf);
+  await openMasechet(masechet, daf);
 }
 
 // ---------------- MASECHTOT ----------------
@@ -149,123 +149,127 @@ window.openMasechet = async function(name, focusDaf = null) {
       saved[data.daf] = data.status;
     }
   });
+
   const learnedCount = Object.values(saved)
-  .filter(v => v === "learned")
-  .length;
+    .filter(v => v === "learned")
+    .length;
 
-const percent = Math.round((learnedCount / (total - 1)) * 100);
-  
+  const percent = Math.round((learnedCount / (total - 1)) * 100);
 
-const dapim = Array.from({ length: total - 1 }, (_, i) => {
+  const dapim = Array.from({ length: total - 1 }, (_, i) => {
     const dafNumber = i + 2;
     const dafStr = toGemaraDaf(dafNumber);
     const status = saved[dafStr];
 
-    const bgColor = status === "learned" ? "#d1fae5" 
-                  : status === "skipped" ? "#fee2e2" 
-                  : "white";
-
-    const badge = "";
+    const bgColor = status === "learned" ? "#d1fae5"
+      : status === "skipped" ? "#fee2e2"
+        : "white";
 
     return `
-    <div id="card-${dafStr}"
-    class="card"
-    style="display:flex; justify-content:space-between; direction:rtl;">
-
-    <span id="text-${dafStr}">
-      📄 דף ${dafStr}
-    </span>
-
-    <div>
-      <button onclick="markLearned('${name}','${dafStr}')">✔ למדתי</button>
-      <button onclick="markSkipped('${name}','${dafStr}')">⏭ דילגתי</button>
-    </div>
-
-  </div>
-`;
+      <div id="card-${dafStr}"
+        class="card"
+        style="display:flex; justify-content:space-between; direction:rtl; background:${bgColor}">
+        <span id="text-${dafStr}">
+          📄 דף ${dafStr}
+        </span>
+        <div>
+          <button onclick="markLearned('${name}','${dafStr}')">✔ למדתי</button>
+          <button onclick="markSkipped('${name}','${dafStr}')">⏭ דילגתי</button>
+        </div>
+      </div>
+    `;
   });
 
   appDiv.innerHTML = `
-<div style="direction:rtl">
+    <div style="direction:rtl">
+      <div class="stickyHeader">
+        <button onclick="goBack()">
+          ⬅ חזרה
+        </button>
 
-<div class="stickyHeader">
+        <div style="flex:1">
+          <h2 style="margin:0">${name}</h2>
+          <div class="progressOuter">
+            <div class="progressInner" id="progressBar" style="width:${percent}%"></div>
+          </div>
+          <small id="progressText">
+            ${learnedCount} / ${total - 1} דפים (${percent}%)
+          </small>
+        </div>
 
-  <button onclick="goBack()">
-    ⬅ חזרה
-  </button>
+        <button onclick="markAll('${name}','learned')" title="סימן הכל כנלמד">
+          ✅
+        </button>
 
-  <div style="flex:1">
+        <button onclick="markAll('${name}','skipped')" title="סימן הכל כדולג">
+          ⏭
+        </button>
+      </div>
 
-    <h2>${name}</h2>
-
-    <div class="progressOuter">
-      <div
-        class="progressInner"
-          id="progressBar"
-        style="width:${percent}%">
+      <div style="padding-top:70px">
+        <h2>${name}</h2>
+        ${dapim.join("")}
       </div>
     </div>
-
-    <small id="progressText">
-  ${learnedCount} / ${total - 1} דפים (${percent}%)
-</small>
-
-  </div>
-
-  <button onclick="markAll('${name}','learned')">
-    ✅
-  </button>
-
-  <button onclick="markAll('${name}','skipped')">
-    ⏭
-  </button>
-
-</div>
-
-  <div style="padding-top:70px">
-
-    <h2>${name}</h2>
-
-    ${dapim.join("")}
-
-  </div>
-
-</div>
-`;
+  `;
 
   if (focusDaf) {
-  setTimeout(() => {
-    const el = document.getElementById(`card-${focusDaf}`);
+    setTimeout(() => {
+      const el = document.getElementById(`card-${focusDaf}`);
 
-    if (el) {
-      el.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
+      if (el) {
+        el.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
 
-      el.style.background = "#fef08a";
-    }
-  }, 100);
-}
-  
+        el.style.background = "#fef08a";
+      }
+    }, 100);
+  }
+};
+
 // ---------------- MARK DAF ----------------
 window.markLearned = async function(masechet, daf) {
   await saveDafStatus(masechet, daf, "learned");
-
   updateCardUI(daf, "learned");
-
   updateProgressUI(masechet);
 };
 
 window.markSkipped = async function(masechet, daf) {
   await saveDafStatus(masechet, daf, "skipped");
-
   updateCardUI(daf, "skipped");
-
   updateProgressUI(masechet);
 };
-// update progress bar
-  function updateProgressUI(masechet) {
+
+// סימון כל הדפים במסכת
+window.markAll = async function(masechet, status) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const total = masechetPages[masechet];
+  const cards = document.querySelectorAll(`[id^="card-"]`);
+
+  // סימון כל דף
+  for (let i = 2; i < total; i++) {
+    const dafStr = toGemaraDaf(i);
+    const ref = doc(db, "users", user.uid, "progress", `${masechet}_${dafStr}`);
+    await setDoc(ref, {
+      masechet,
+      daf: dafStr,
+      status,
+      timestamp: new Date().toISOString()
+    });
+
+    updateCardUI(dafStr, status);
+  }
+
+  updateProgressUI(masechet);
+  showToast(status === "learned" ? "✅ כל המסכת סומנה כנלמדה" : "⏭ כל המסכת סומנה כדולגה");
+};
+
+// עדכון Progress Bar בזמן אמת
+function updateProgressUI(masechet) {
   const cards = document.querySelectorAll(`[id^="card-"]`);
 
   let learned = 0;
@@ -279,13 +283,33 @@ window.markSkipped = async function(masechet, daf) {
   const total = masechetPages[masechet] - 1;
   const percent = Math.round((learned / total) * 100);
 
-  const header = document.getElementById("progressHeader");
+  const progressBar = document.getElementById("progressBar");
+  const progressText = document.getElementById("progressText");
 
-  if (header) {
-    header.innerText = `📊 ${learned}/${total} (${percent}%)`;
+  if (progressBar) {
+    progressBar.style.width = percent + "%";
   }
+
+  if (progressText) {
+    progressText.innerText = `${learned} / ${total} דפים (${percent}%)`;
   }
-  
+}
+
+// עדכון כרטיס בזמן אמת
+function updateCardUI(daf, status) {
+  const card = document.getElementById(`card-${daf}`);
+  const text = document.getElementById(`text-${daf}`);
+
+  if (!card || !text) return;
+
+  if (status === "learned") {
+    card.style.background = "#d1fae5";
+  } else {
+    card.style.background = "#fee2e2";
+  }
+}
+
+// שמירה בFirestore
 async function saveDafStatus(masechet, daf, status) {
   const user = auth.currentUser;
   if (!user) return;
@@ -301,24 +325,12 @@ async function saveDafStatus(masechet, daf, status) {
   showToast(status === "learned" ? "✅ כל הכבוד, עוד דף לאוסף" : "⏭ בעזרת ה' תזכה להשלים");
 }
 
-  // update card
-  function updateCardUI(daf, status) {
-  const card = document.getElementById(`card-${daf}`);
-  const text = document.getElementById(`text-${daf}`);
-
-  if (!card || !text) return;
-
-  if (status === "learned") {
-    card.style.background = "#d1fae5";
-  } else {
-    card.style.background = "#fee2e2";
-  }
-  }
 // ---------------- BACK ----------------
 window.goBack = function () {
   renderApp(auth.currentUser);
 };
-//-------------showToast------------
+
+// ----------- TOAST -----------
 function showToast(msg) {
   const toast = document.getElementById("toast");
   toast.textContent = msg;
