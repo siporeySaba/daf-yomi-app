@@ -106,8 +106,8 @@ async function loadTodayDaf() {
     const res = await fetch("https://www.shas.org/api/dafyomi");
     const data = await res.json();
 
-    const masechet = data.hebrew.masechet;
-    const daf = data.hebrew.daf;
+    const masechet = data.masechet; // בלי .hebrew
+    const daf = data.daf; // בלי .hebrew
 
     await openMasechet(masechet, `דף ${daf}`);
   } catch (err) {
@@ -115,7 +115,6 @@ async function loadTodayDaf() {
     showToast("שגיאה בטעינת הדף היומי");
   }
 }
-
 // ---------------- MASECHTOT ----------------
 function loadMasechtot() {
   const container = document.getElementById("masechtot");
@@ -253,7 +252,7 @@ window.markAll = async function(masechet, status) {
   const cards = document.querySelectorAll(`[id^="card-"]`);
 
   // סימון כל דף
-  for (let i = 2; i =< total; i++) {
+  for (let i = 2; i <= total; i++) {
     const dafStr = toGemaraDaf(i);
     const ref = doc(db, "users", user.uid, "progress", `${masechet}_${dafStr}`);
     await setDoc(ref, {
