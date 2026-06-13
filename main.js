@@ -103,27 +103,62 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    // טען את ספריית hebcal דינמית
-    if (typeof window.HebCal === 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://www.hebcal.com/dist/hebcal.min.js';
-      script.onload = () => {
-        console.log("HebCal loaded");
-        loadTodayDaf(); // קרא שוב אחרי טעינה
+    const res = await fetch("https://www.shas.org/api/daf-yomi");
+    const data = await res.json();
+    
+    console.log("Daf info:", data);
+    
+    if (data.current_daf) {
+      // המרת האנגלית לעברית
+      const masechetMap = {
+        "Brachot": "ברכות",
+        "Shabbat": "שבת",
+        "Eruvin": "עירובין",
+        "Pesachim": "פסחים",
+        "Shekalim": "שקלים",
+        "Yoma": "יומא",
+        "Sukkah": "סוכה",
+        "Beitzah": "ביצה",
+        "Rosh Hashanah": "ראש השנה",
+        "Taanit": "תענית",
+        "Megillah": "מגילה",
+        "Moed Katan": "מועד קטן",
+        "Chagigah": "חגיגה",
+        "Yevamot": "יבמות",
+        "Ketubot": "כתובות",
+        "Nedarim": "נדרים",
+        "Nazir": "נזיר",
+        "Sotah": "סוטה",
+        "Gittin": "גיטין",
+        "Kiddushin": "קידושין",
+        "Bava Kamma": "בבא קמא",
+        "Bava Metzia": "בבא מציעא",
+        "Bava Batra": "בבא בתרא",
+        "Sanhedrin": "סנהדרין",
+        "Makkot": "מכות",
+        "Shevuot": "שבועות",
+        "Avodah Zarah": "עבודה זרה",
+        "Horayot": "הוריות",
+        "Zevachim": "זבחים",
+        "Menachot": "מנחות",
+        "Chullin": "חולין",
+        "Bechoros": "בכורות",
+        "Arachin": "ערכין",
+        "Temurah": "תמורה",
+        "Keritot": "כריתות",
+        "Meilah": "מעילה",
+        "Tamid": "תמיד",
+        "Middot": "מידות",
+        "Kinnim": "קינים",
+        "Niddah": "נדה"
       };
-      document.head.appendChild(script);
-      return;
-    }
 
-    const today = new Date();
-    const dafinfo = window.HebCal.getDafYomi(today);
-    
-    console.log("Daf info:", dafinfo);
-    
-    if (dafinfo) {
-      const focusDaf = `דף ${dafinfo.daf}`;
-      console.log("Focus daf:", focusDaf);
-      await openMasechet(dafinfo.name, focusDaf);
+      const masechet = masechetMap[data.current_daf.masechta] || data.current_daf.masechta;
+      const daf = data.current_daf.daf;
+      const focusDaf = `דף ${toGemaraDaf(daf)}`;
+      
+      console.log("Opening:", masechet, focusDaf);
+      await openMasechet(masechet, focusDaf);
     } else {
       showToast("לא הצליח לטעון את הדף היומי");
     }
