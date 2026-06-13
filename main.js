@@ -103,11 +103,21 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
+    if (typeof HebCal === 'undefined') {
+      showToast("טוען ספריית דף יומי...");
+      setTimeout(() => loadTodayDaf(), 500);
+      return;
+    }
+
     const today = new Date();
     const dafinfo = HebCal.getDafYomi(today);
     
+    console.log("Daf info:", dafinfo); // כדי לראות מה בדיוק חוזר
+    
     if (dafinfo) {
-      await openMasechet(dafinfo.name, `דף ${dafinfo.daf}`);
+      const focusDaf = `דף ${dafinfo.daf}`;
+      console.log("Focus daf:", focusDaf); // בדוק מה יש כאן
+      await openMasechet(dafinfo.name, focusDaf);
     } else {
       showToast("לא הצליח לטעון את הדף היומי");
     }
