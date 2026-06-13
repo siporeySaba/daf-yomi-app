@@ -79,51 +79,55 @@ button:hover {
   color: #111827;
 }
 
-.stickyHeader{
-
-position:sticky;
-
-top:0;
-
-background:white;
-
-padding:12px;
-
-display:flex;
-
-gap:10px;
-
-align-items:center;
-
-box-shadow:0 3px 10px rgba(0,0,0,.08);
-
-z-index:999;
-
+/* =========================
+   STICKY HEADER
+========================= */
+.stickyHeader {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  direction: rtl;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.progressOuter{
-
-height:10px;
-
-background:#e5e7eb;
-
-border-radius:20px;
-
-overflow:hidden;
-
-margin:8px 0;
-
+.stickyHeader h2 {
+  margin: 0;
+  font-size: 18px;
 }
 
-.progressInner{
+.stickyHeader button {
+  padding: 8px 12px;
+  font-size: 14px;
+  min-width: auto;
+}
 
-height:100%;
+.progressOuter {
+  background: #e5e7eb;
+  height: 4px;
+  border-radius: 2px;
+  margin: 8px 0;
+  overflow: hidden;
+}
 
-background:#22c55e;
+.progressInner {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
 
-transition:.3s;
-transition: width 0.3s ease;
-
+.stickyHeader small {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 
