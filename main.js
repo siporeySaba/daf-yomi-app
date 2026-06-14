@@ -255,30 +255,32 @@ window.openMasechet = async function(name, focusDaf = null) {
 
   const percent = Math.round((learnedCount / (total - 1)) * 100);
 
-  const dapim = Array.from({ length: total - 1 }, (_, i) => {
-    const dafNumber = i + 2;
-    const dafStr = toGemaraDaf(dafNumber);
-    const status = saved[dafStr];
+const dapim = Array.from({ length: total - 1 }, (_, i) => {
+  const dafNumber = i + 2;
+  const dafStr = toGemaraDaf(dafNumber);
+  const status = saved[dafStr];
 
-    const bgColor = status === "learned" ? "#d1fae5"
-      : status === "skipped" ? "#fee2e2"
-        : "white";
+  const bgColor = status === "learned" ? "#10b981"
+    : status === "skipped" ? "#dc2626"
+      : "white";
 
-    return `
-      <div id="card-${dafStr}"
-        class="card"
-         data-status="${status}"
-        style="display:flex; justify-content:space-between; direction:rtl; background:${bgColor}">
-        <span id="text-${dafStr}">
-          📄 דף ${dafStr}
-        </span>
-        <div>
-          <button onclick="markLearned('${name}','${dafStr}')">✔ למדתי</button>
-          <button onclick="markSkipped('${name}','${dafStr}')">⏭ דילגתי</button>
-        </div>
+  const textColor = (status === "learned" || status === "skipped") ? "white" : "inherit";
+
+  return `
+    <div id="card-${dafStr}"
+      class="card"
+      data-status="${status}"
+      style="display:flex; justify-content:space-between; align-items:center; direction:rtl; background:${bgColor}; padding:6px 12px; margin:3px 0; border-radius:8px;">
+      <span id="text-${dafStr}" style="color:${textColor}; font-weight:${status ? '600' : '400'}">
+        📄 דף ${dafStr}
+      </span>
+      <div style="display:flex; gap:6px;">
+        <button onclick="markLearned('${name}','${dafStr}')" title="למדתי">✔️</button>
+        <button onclick="markSkipped('${name}','${dafStr}')" title="דילגתי">⏭️</button>
       </div>
-    `;
-  });
+    </div>
+  `;
+});
 
   appDiv.innerHTML = `
     <div style="direction:rtl">
