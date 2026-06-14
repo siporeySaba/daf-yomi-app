@@ -238,10 +238,11 @@ window.openMasechet = async function(name, focusDaf = null) {
     </div>
   `;
 
-  if (focusDaf) {
-  setTimeout(() => {
+if (focusDaf) {
+  // המתן להשלמת הרינדור
+  requestAnimationFrame(() => {
     const el = document.getElementById(`card-${focusDaf}`);
-
+    
     if (el) {
       el.scrollIntoView({
         behavior: "smooth",
@@ -256,7 +257,7 @@ window.openMasechet = async function(name, focusDaf = null) {
         el.style.background = status === "learned" ? "#d1fae5" : status === "skipped" ? "#fee2e2" : "white";
       }, 2000);
     }
-  }, 100);
+  });
 }
 };
 
