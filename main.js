@@ -153,6 +153,35 @@ async function loadTodayDafDisplay() {
   }
 }
 
+// ===== DARK MODE =====
+function initDarkMode() {
+  const isDark = localStorage.getItem('darkMode') === 'true';
+  
+  if (isDark) {
+    document.body.classList.add('dark-mode');
+  }
+
+  // אם עדיין אין כפתור, צור אותו
+  if (!document.querySelector('.dark-mode-toggle')) {
+    const toggle = document.createElement('button');
+    toggle.className = 'dark-mode-toggle';
+    toggle.innerHTML = isDark ? '☀️' : '🌙';
+    toggle.onclick = toggleDarkMode;
+    document.body.appendChild(toggle);
+  }
+}
+
+function toggleDarkMode() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('darkMode', isDark);
+  
+  const toggle = document.querySelector('.dark-mode-toggle');
+  toggle.innerHTML = isDark ? '☀️' : '🌙';
+}
+
+// התחל dark mode כשהעמוד טוען
+initDarkMode();
+
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
@@ -544,5 +573,15 @@ function showToast(msg) {
 // ---------------- AUTH ----------------
 onAuthStateChanged(auth, (user) => {
   if (user) renderApp(user);
+  else renderLogin();
+});
+
+// ---------------- DARK_MODE ----------------
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    renderApp(user);
+    initDarkMode(); // טען את dark mode
+  }
   else renderLogin();
 });
