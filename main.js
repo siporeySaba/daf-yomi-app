@@ -239,25 +239,59 @@ window.openMasechet = async function(name, focusDaf = null) {
   `;
 
 if (focusDaf) {
-  // המתן להשלמת הרינדור
-  requestAnimationFrame(() => {
-    const el = document.getElementById(`card-${focusDaf}`);
+  console.log("🔍 Starting focus search for:", focusDaf);
+  
+  setTimeout(() => {
+    console.log("⏱️ setTimeout triggered, looking for cards...");
     
-    if (el) {
-      el.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-
-      el.style.background = "#fef08a";
-      el.style.transition = "background 2s ease";
+    const cards = document.querySelectorAll('[id^="card-"]');
+    console.log("📋 Total cards found:", cards.length);
+    
+    let found = false;
+    
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i];
+      const cardText = card.textContent;
+      const cardId = card.id;
       
-      setTimeout(() => {
-        const status = el.getAttribute("data-status");
-        el.style.background = status === "learned" ? "#d1fae5" : status === "skipped" ? "#fee2e2" : "white";
-      }, 2000);
+      console.log(`Card ${i}: ID="${cardId}", Text="${cardText}"`);
+      
+      if (cardText.includes(focusDaf)) {
+        console.log("✅ MATCH FOUND! Card text includes:", focusDaf);
+        console.log("📍 Scrolling to card...");
+        
+        found = true;
+        
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        console.log("🎨 Setting background to yellow...");
+        
+        card.style.background = "#fef08a";
+        card.style.transition = "background 2s ease";
+        
+        setTimeout(() => {
+          const status = card.getAttribute("data-status");
+          console.log("📊 Card status:", status);
+          
+          const finalBg = status === "learned" ? "#d1fae5" : status === "skipped" ? "#fee2e2" : "white";
+          console.log("🔄 Reverting background to:", finalBg);
+          
+          card.style.background = finalBg;
+        }, 2000);
+        
+        break;
+      }
     }
-  });
+    
+    if (!found) {
+      console.log("❌ NO MATCH FOUND! Looking for focusDaf:", focusDaf);
+      console.log("📌 All card texts:");
+      cards.forEach((card, i) => {
+        console.log(`  Card ${i}: "${card.textContent.trim()}"`);
+      });
+    }
+  }, 200);
+  
+  console.log("✨ Focus logic set up");
 }
 };
 
