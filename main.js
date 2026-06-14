@@ -77,27 +77,80 @@ function renderLogin() {
 // ---------------- APP ----------------
 function renderApp(user) {
   appDiv.innerHTML = `
-    <div style="direction: rtl; padding:16px">
-      <div class="card">
-        <h2>שלום ${user.displayName}</h2>
-        <p>${user.email}</p>
-
-        <button id="todayBtn" class="primary-btn">📅 הדף היומי</button>
-        <button id="progressBtn" class="secondary-btn">📊 התקדמות</button>
-        <button id="logoutBtn" class="secondary-btn">התנתק</button>
+    <div style="direction: rtl;">
+      <div style="padding:20px 16px; text-align:center; background:white; border-bottom:1px solid #e5e7eb;">
+        <h2 style="margin:0; font-size:24px;">שלום, ${user.displayName}!</h2>
       </div>
 
-      <h3>📚 מסכתות</h3>
-      <div id="masechtot"></div>
+      <div class="stickyHeader" style="padding:12px 16px;">
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button id="todayBtn" class="primary-btn" style="flex:1; max-width:160px; padding:10px;">📅 הדף היומי</button>
+          <button id="progressBtn" class="secondary-btn" style="flex:1; max-width:160px; padding:10px;">📊 התקדמות</button>
+          <button id="logoutBtn" class="secondary-btn" style="flex:1; max-width:160px; padding:10px;">🚪 התנתק</button>
+        </div>
+
+        <div id="todayDafDisplay" style="
+          text-align:center;
+          background:#f9fafb;
+          padding:10px;
+          border-radius:8px;
+          font-size:13px;
+          color:#666;
+          margin-top:10px;
+          border:1px solid #e5e7eb;
+        ">
+          ⏳ טוען דף יומי...
+        </div>
+      </div>
+
+<div style="padding-top:10px; padding-left:16px; padding-right:16px;">
+<h3>📚 מסכתות</h3>
+        <div id="masechtot"></div>
+      </div>
     </div>
   `;
 
   document.getElementById("logoutBtn").onclick = () => signOut(auth);
   document.getElementById("todayBtn").onclick = loadTodayDaf;
-  document.getElementById("progressBtn").onclick = () => {
-    showToast("מסך התקדמות בקרוב...");
-  };
+  document.getElementById("progressBtn").onclick = loadProgress;
+
+  loadTodayDafDisplay();
   loadMasechtot();
+}
+
+async function loadTodayDafDisplay() {
+  try {
+    const startDate = new Date(2026, 5, 14);
+    const startMasechet = "חולין";
+    const startDaf = 45;
+
+    const today = new Date();
+    const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+
+    const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
+
+    let startIndex = masechtosList.findIndex(m => m.name === startMasechet);
+    let currentDaf = startDaf + daysPassed;
+
+    let masechetIndex = startIndex;
+    let dafNumber = currentDaf;
+
+    while (dafNumber > masechtosList[masechetIndex].dapim) {
+      dafNumber -= masechtosList[masechetIndex].dapim;
+      masechetIndex = (masechetIndex + 1) % masechtosList.length;
+    }
+
+    const focusMasechet = masechtosList[masechetIndex].name;
+    const focusDafStr = toGemaraDaf(dafNumber);
+
+    const displayEl = document.getElementById("todayDafDisplay");
+    if (displayEl) {
+      displayEl.innerHTML = `📖 <strong>הדף היומי:</strong> ${focusMasechet} דף ${focusDafStr}`;
+      displayEl.style.color = "#333";
+    }
+  } catch (err) {
+    console.error("Error loading today's daf display:", err);
+  }
 }
 
 // ---------------- TODAY DAF ----------------
