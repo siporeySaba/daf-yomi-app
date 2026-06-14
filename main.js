@@ -77,18 +77,35 @@ function renderLogin() {
 // ---------------- APP ----------------
 function renderApp(user) {
   appDiv.innerHTML = `
-    <div style="direction: rtl; padding:16px">
-      <div class="card">
-        <h2>שלום ${user.displayName}</h2>
-        <p>${user.email}</p>
+    <div style="direction: rtl;">
+      <div class="stickyHeader" style="padding:20px 16px;">
+        <div style="text-align:center;">
+          <h2 style="margin:0; font-size:24px;">שלום, ${user.displayName}!</h2>
+        </div>
 
-        <button id="todayBtn" class="primary-btn">📅 הדף היומי</button>
-        <button id="progressBtn" class="secondary-btn">📊 התקדמות</button>
-        <button id="logoutBtn" class="secondary-btn">התנתק</button>
+        <div style="display:flex; gap:12px; justify-content:center; margin:16px 0;">
+          <button id="todayBtn" class="primary-btn" style="flex:1; max-width:180px;">📅 הדף היומי</button>
+          <button id="progressBtn" class="secondary-btn" style="flex:1; max-width:180px;">📊 התקדמות</button>
+          <button id="logoutBtn" class="secondary-btn" style="flex:1; max-width:180px;">🚪 התנתק</button>
+        </div>
+
+        <div id="todayDafDisplay" style="
+          text-align:center;
+          background:rgba(255,255,255,0.05);
+          padding:12px;
+          border-radius:10px;
+          font-size:14px;
+          color:#666;
+          margin-top:12px;
+        ">
+          ⏳ טוען דף יומי...
+        </div>
       </div>
 
-      <h3>📚 מסכתות</h3>
-      <div id="masechtot"></div>
+      <div style="padding-top:220px; padding-left:16px; padding-right:16px;">
+        <h3>📚 מסכתות</h3>
+        <div id="masechtot"></div>
+      </div>
     </div>
   `;
 
@@ -97,7 +114,46 @@ function renderApp(user) {
   document.getElementById("progressBtn").onclick = () => {
     showToast("מסך התקדמות בקרוב...");
   };
+
+  // טען את הדף היומי וכתוב אותו
+  loadTodayDafDisplay();
+  
   loadMasechtot();
+}
+
+async function loadTodayDafDisplay() {
+  try {
+    const startDate = new Date(2026, 5, 14);
+    const startMasechet = "חולין";
+    const startDaf = 45;
+
+    const today = new Date();
+    const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+
+    const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
+
+    let startIndex = masechtosList.findIndex(m => m.name === startMasechet);
+    let currentDaf = startDaf + daysPassed;
+
+    let masechetIndex = startIndex;
+    let dafNumber = currentDaf;
+
+    while (dafNumber > masechtosList[masechetIndex].dapim) {
+      dafNumber -= masechtosList[masechetIndex].dapim;
+      masechetIndex = (masechetIndex + 1) % masechtosList.length;
+    }
+
+    const focusMasechet = masechtosList[masechetIndex].name;
+    const focusDafStr = toGemaraDaf(dafNumber);
+
+    const displayEl = document.getElementById("todayDafDisplay");
+    if (displayEl) {
+      displayEl.innerHTML = `📖 <strong>הדף היומי:</strong> ${focusMasechet} דף ${focusDafStr}`;
+      displayEl.style.color = "#333";
+    }
+  } catch (err) {
+    console.error("Error loading today's daf display:", err);
+  }
 }
 
 // ---------------- TODAY DAF ----------------
