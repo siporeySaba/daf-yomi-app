@@ -78,31 +78,32 @@ function renderLogin() {
 function renderApp(user) {
   appDiv.innerHTML = `
     <div style="direction: rtl;">
-      <div class="stickyHeader" style="padding:20px 16px;">
-        <div style="text-align:center;">
-          <h2 style="margin:0; font-size:24px;">שלום, ${user.displayName}!</h2>
-        </div>
+      <div style="padding:20px 16px; text-align:center; background:white; border-bottom:1px solid #e5e7eb;">
+        <h2 style="margin:0; font-size:24px;">שלום, ${user.displayName}!</h2>
+      </div>
 
-        <div style="display:flex; gap:12px; justify-content:center; margin:16px 0;">
-          <button id="todayBtn" class="primary-btn" style="flex:1; max-width:180px;">📅 הדף היומי</button>
-          <button id="progressBtn" class="secondary-btn" style="flex:1; max-width:180px;">📊 התקדמות</button>
-          <button id="logoutBtn" class="secondary-btn" style="flex:1; max-width:180px;">🚪 התנתק</button>
+      <div class="stickyHeader" style="padding:12px 16px;">
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button id="todayBtn" class="primary-btn" style="flex:1; max-width:160px; padding:10px;">📅 הדף היומי</button>
+          <button id="progressBtn" class="secondary-btn" style="flex:1; max-width:160px; padding:10px;">📊 התקדמות</button>
+          <button id="logoutBtn" class="secondary-btn" style="flex:1; max-width:160px; padding:10px;">🚪 התנתק</button>
         </div>
 
         <div id="todayDafDisplay" style="
           text-align:center;
-          background:rgba(255,255,255,0.05);
-          padding:12px;
-          border-radius:10px;
-          font-size:14px;
+          background:#f9fafb;
+          padding:10px;
+          border-radius:8px;
+          font-size:13px;
           color:#666;
-          margin-top:12px;
+          margin-top:10px;
+          border:1px solid #e5e7eb;
         ">
           ⏳ טוען דף יומי...
         </div>
       </div>
 
-      <div style="padding-top:220px; padding-left:16px; padding-right:16px;">
+      <div style="padding-top:130px; padding-left:16px; padding-right:16px;">
         <h3>📚 מסכתות</h3>
         <div id="masechtot"></div>
       </div>
@@ -113,9 +114,7 @@ function renderApp(user) {
   document.getElementById("todayBtn").onclick = loadTodayDaf;
   document.getElementById("progressBtn").onclick = loadProgress;
 
-  // טען את הדף היומי וכתוב אותו
   loadTodayDafDisplay();
-  
   loadMasechtot();
 }
 
