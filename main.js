@@ -225,6 +225,19 @@ window.openMasechet = async function(name, focusDaf = null) {
     return;
   }
 
+  // ===== BACK BUTTON HANDLER =====
+window.addEventListener('popstate', () => {
+  if (appDiv.innerHTML.includes('stickyHeader') === false) {
+    // אנחנו בעמוד מסכת, חזור לראשי
+    renderApp(auth.currentUser);
+  }
+});
+
+// כשנכנסים לעמוד מסכת, הוסף state להיסטוריה
+window.openMasechet = async function(name, focusDaf = null) {
+  // הוסף את השורה הזו בתחילת הפונקציה
+  window.history.pushState({ page: 'masechet', masechet: name }, '', '#masechet');
+  
   // טעינת סטטוס קיים מ-Firestore
   const progressSnap = await getDocs(collection(db, "users", user.uid, "progress"));
   const saved = {};
