@@ -130,6 +130,37 @@ button:hover {
   color: #6b7280;
 }
 
+/* =========================
+   STICKY HEADER - HOME
+========================= */
+.stickyHeader {
+  position: sticky;
+  top: 0;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.stickyHeader h2 {
+  font-size: 24px;
+  margin: 0;
+  color: #1f2937;
+}
+
+.stickyHeader .primary-btn,
+.stickyHeader .secondary-btn {
+  border-radius: 10px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#todayDafDisplay {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-weight: 500;
+}
 
 /* =========================
    LIST ITEMS
