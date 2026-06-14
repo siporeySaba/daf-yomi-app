@@ -111,9 +111,7 @@ function renderApp(user) {
 
   document.getElementById("logoutBtn").onclick = () => signOut(auth);
   document.getElementById("todayBtn").onclick = loadTodayDaf;
-  document.getElementById("progressBtn").onclick = () => {
-    showToast("מסך התקדמות בקרוב...");
-  };
+  document.getElementById("progressBtn").onclick = loadProgress;
 
   // טען את הדף היומי וכתוב אותו
   loadTodayDafDisplay();
@@ -350,6 +348,90 @@ if (focusDaf) {
   console.log("✨ Focus logic set up");
 }
 };
+
+// ===== PROGRESS PAGE =====
+async function loadProgress() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const progressSnap = await getDocs(collection(db, "users", user.uid, "progress"));
+  const progress = {};
+  
+  progressSnap.forEach(d => {
+    const data = d.data();
+    const masechet = data.masechet;
+    if (!progress[masechet]) progress[masechet] = { learned: 0, skipped: 0 };
+    if (data.status === "learned") progress[masechet].learned++;
+    else if (data.status === "skipped") progress[masechet].skipped++;
+  });
+
+  const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
+
+  let totalLearned = 0, totalSkipped = 0, totalDapim = 0;
+
+  const rows = masechtosList.map(m => {
+    const total = m.dapim - 1;
+    const learned = progress[m.name]?.learned || 0;
+    const skipped = progress[m.name]?.skipped || 0;
+    const percent = Math.round((learned / total) * 100);
+
+    totalLearned += learned;
+    totalSkipped += skipped;
+    totalDapim += total;
+
+    return `
+      <div class="progress-row">
+        <div class="progress-masechet">📖 ${m.name}</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${percent}%"></div>
+          </div>
+        </div>
+        <div class="progress-stats">
+          <span class="learned">✅ ${learned}</span>
+          <span class="separator">/</span>
+          <span class="total">${total}</span>
+          <span class="percent">${percent}%</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const totalPercent = Math.round((totalLearned / totalDapim) * 100);
+
+  appDiv.innerHTML = `
+    <div style="direction:rtl; padding:16px;">
+      <button onclick="goBack()" style="margin-bottom:20px;">⬅ חזור</button>
+
+      <h2>📊 התקדמותך</h2>
+
+      <div class="progress-summary">
+        <div class="summary-card">
+          <div class="summary-label">נלמדו</div>
+          <div class="summary-number" style="color:#10b981;">${totalLearned}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">דולגו</div>
+          <div class="summary-number" style="color:#ef4444;">${totalSkipped}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">סה״כ</div>
+          <div class="summary-number">${totalDapim}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">אחוז</div>
+          <div class="summary-number" style="color:#4f46e5;">${totalPercent}%</div>
+        </div>
+      </div>
+
+      <div class="progress-list">
+        ${rows}
+      </div>
+    </div>
+  `;
+}
+
+window.loadProgress = loadProgress;
 
 // ---------------- MARK DAF ----------------
 window.markLearned = async function(masechet, daf) {
