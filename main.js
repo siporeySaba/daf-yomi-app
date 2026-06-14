@@ -73,6 +73,14 @@ function renderLogin() {
     await signInWithPopup(auth, provider);
   };
 }
+// ---------------Register Service Worker------------------
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js').then(reg => {
+    console.log('✅ Service Worker registered');
+  }).catch(err => {
+    console.log('❌ Service Worker registration failed:', err);
+  });
+}
 
 // ---------------- APP ----------------
 function renderApp(user) {
@@ -155,18 +163,42 @@ async function loadTodayDafDisplay() {
 
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
-  const today = new Date().toISOString().split("T")[0];
+  try {
+    // תאריך התחלה: 14 ביוני 2026 = חולין דף 45
+    const startDate = new Date(2026, 5, 14); // יוני = חודש 5
+    const startMasechet = "חולין";
+    const startDaf = 45;
 
-  const res = await fetch(`https://www.hebcal.com/daf?cfg=json&date=${today}`);
-  const data = await res.json();
+    const today = new Date();
+    const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
 
-  const [masechet, daf] = data.hebrew.split(" ");
+    // מערך מסכתות בסדר הדף היומי
+    const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
 
-  alert(`📅 היום: ${masechet} דף ${daf}`);
+    // מצא את אינדקס התחלה (חולין)
+    let startIndex = masechtosList.findIndex(m => m.name === startMasechet);
+    let currentDaf = startDaf + daysPassed;
 
-  await openMasechet(masechet, daf);
+    // חשב מסכת ודף חדשים עם סיבוב
+    let masechetIndex = startIndex;
+    let dafNumber = currentDaf;
+
+    while (dafNumber > masechtosList[masechetIndex].dapim) {
+      dafNumber -= masechtosList[masechetIndex].dapim;
+      masechetIndex = (masechetIndex + 1) % masechtosList.length;
+    }
+
+    const focusMasechet = masechtosList[masechetIndex].name;
+    const focusDafStr = toGemaraDaf(dafNumber);
+    const focusDaf = `דף ${focusDafStr}`; // בפורמט שמתאים ל-ID
+
+    console.log(`Today: ${focusMasechet} ${focusDaf}`);
+    await openMasechet(focusMasechet, focusDaf);
+  } catch (err) {
+    console.error("Error:", err);
+    showToast("שגיאה בטעינת הדף היומי");
+  }
 }
-
 // ---------------- MASECHTOT ----------------
 function loadMasechtot() {
   const container = document.getElementById("masechtot");
@@ -193,6 +225,19 @@ window.openMasechet = async function(name, focusDaf = null) {
     return;
   }
 
+  // ===== BACK BUTTON HANDLER =====
+window.addEventListener('popstate', () => {
+  if (appDiv.innerHTML.includes('stickyHeader') === false) {
+    // אנחנו בעמוד מסכת, חזור לראשי
+    renderApp(auth.currentUser);
+  }
+});
+
+// כשנכנסים לעמוד מסכת, הוסף state להיסטוריה
+window.openMasechet = async function(name, focusDaf = null) {
+  // הוסף את השורה הזו בתחילת הפונקציה
+  window.history.pushState({ page: 'masechet', masechet: name }, '', '#masechet');
+  
   // טעינת סטטוס קיים מ-Firestore
   const progressSnap = await getDocs(collection(db, "users", user.uid, "progress"));
   const saved = {};
@@ -202,6 +247,7 @@ window.openMasechet = async function(name, focusDaf = null) {
       saved[data.daf] = data.status;
     }
   });
+}
 
   const learnedCount = Object.values(saved)
     .filter(v => v === "learned")
@@ -221,6 +267,7 @@ window.openMasechet = async function(name, focusDaf = null) {
     return `
       <div id="card-${dafStr}"
         class="card"
+         data-status="${status}"
         style="display:flex; justify-content:space-between; direction:rtl; background:${bgColor}">
         <span id="text-${dafStr}">
           📄 דף ${dafStr}
@@ -266,21 +313,146 @@ window.openMasechet = async function(name, focusDaf = null) {
     </div>
   `;
 
-  if (focusDaf) {
-    setTimeout(() => {
-      const el = document.getElementById(`card-${focusDaf}`);
-
-      if (el) {
-        el.scrollIntoView({
-          behavior: "smooth",
-          block: "center"
-        });
-
-        el.style.background = "#fef08a";
+if (focusDaf) {
+  console.log("🔍 Starting focus search for:", focusDaf);
+  
+  setTimeout(() => {
+    console.log("⏱️ setTimeout triggered, looking for cards...");
+    
+    const cards = document.querySelectorAll('[id^="card-"]');
+    console.log("📋 Total cards found:", cards.length);
+    
+    let found = false;
+    
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i];
+      const cardText = card.textContent;
+      const cardId = card.id;
+      
+      console.log(`Card ${i}: ID="${cardId}", Text="${cardText}"`);
+      
+      if (cardText.includes(focusDaf)) {
+        console.log("✅ MATCH FOUND! Card text includes:", focusDaf);
+        console.log("📍 Scrolling to card...");
+        
+        found = true;
+        
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        console.log("🎨 Setting background to yellow...");
+        
+        card.style.background = "#fef08a";
+        card.style.transition = "background 2s ease";
+        
+        setTimeout(() => {
+          const status = card.getAttribute("data-status");
+          console.log("📊 Card status:", status);
+          
+          const finalBg = status === "learned" ? "#d1fae5" : status === "skipped" ? "#fee2e2" : "white";
+          console.log("🔄 Reverting background to:", finalBg);
+          
+          card.style.background = finalBg;
+        }, 2000);
+        
+        break;
       }
-    }, 100);
-  }
+    }
+    
+    if (!found) {
+      console.log("❌ NO MATCH FOUND! Looking for focusDaf:", focusDaf);
+      console.log("📌 All card texts:");
+      cards.forEach((card, i) => {
+        console.log(`  Card ${i}: "${card.textContent.trim()}"`);
+      });
+    }
+  }, 200);
+  
+  console.log("✨ Focus logic set up");
+}
 };
+
+// ===== PROGRESS PAGE =====
+async function loadProgress() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const progressSnap = await getDocs(collection(db, "users", user.uid, "progress"));
+  const progress = {};
+  
+  progressSnap.forEach(d => {
+    const data = d.data();
+    const masechet = data.masechet;
+    if (!progress[masechet]) progress[masechet] = { learned: 0, skipped: 0 };
+    if (data.status === "learned") progress[masechet].learned++;
+    else if (data.status === "skipped") progress[masechet].skipped++;
+  });
+
+  const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
+
+  let totalLearned = 0, totalSkipped = 0, totalDapim = 0;
+
+  const rows = masechtosList.map(m => {
+    const total = m.dapim - 1;
+    const learned = progress[m.name]?.learned || 0;
+    const skipped = progress[m.name]?.skipped || 0;
+    const percent = Math.round((learned / total) * 100);
+
+    totalLearned += learned;
+    totalSkipped += skipped;
+    totalDapim += total;
+
+    return `
+      <div class="progress-row">
+        <div class="progress-masechet">📖 ${m.name}</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${percent}%"></div>
+          </div>
+        </div>
+        <div class="progress-stats">
+          <span class="learned">✅ ${learned}</span>
+          <span class="separator">/</span>
+          <span class="total">${total}</span>
+          <span class="percent">${percent}%</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const totalPercent = Math.round((totalLearned / totalDapim) * 100);
+
+  appDiv.innerHTML = `
+    <div style="direction:rtl; padding:16px;">
+      <button onclick="goBack()" style="margin-bottom:20px;">⬅ חזור</button>
+
+      <h2>📊 התקדמותך</h2>
+
+      <div class="progress-summary">
+        <div class="summary-card">
+          <div class="summary-label">נלמדו</div>
+          <div class="summary-number" style="color:#10b981;">${totalLearned}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">דולגו</div>
+          <div class="summary-number" style="color:#ef4444;">${totalSkipped}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">סה״כ</div>
+          <div class="summary-number">${totalDapim}</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">אחוז</div>
+          <div class="summary-number" style="color:#4f46e5;">${totalPercent}%</div>
+        </div>
+      </div>
+
+      <div class="progress-list">
+        ${rows}
+      </div>
+    </div>
+  `;
+}
+
+window.loadProgress = loadProgress;
 
 // ---------------- MARK DAF ----------------
 window.markLearned = async function(masechet, daf) {
@@ -304,7 +476,7 @@ window.markAll = async function(masechet, status) {
   const cards = document.querySelectorAll(`[id^="card-"]`);
 
   // סימון כל דף
-  for (let i = 2; i < total; i++) {
+  for (let i = 2; i <= total; i++) {
     const dafStr = toGemaraDaf(i);
     const ref = doc(db, "users", user.uid, "progress", `${masechet}_${dafStr}`);
     await setDoc(ref, {
@@ -377,11 +549,6 @@ async function saveDafStatus(masechet, daf, status) {
 
   showToast(status === "learned" ? "✅ כל הכבוד, עוד דף לאוסף" : "⏭ בעזרת ה' תזכה להשלים");
 }
-
-// ---------------- BACK ----------------
-window.goBack = function () {
-  renderApp(auth.currentUser);
-};
 
 // ----------- TOAST -----------
 function showToast(msg) {
