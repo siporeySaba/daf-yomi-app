@@ -103,8 +103,8 @@ function renderApp(user) {
         </div>
       </div>
 
-      <div style="padding-top:130px; padding-left:16px; padding-right:16px;">
-        <h3>📚 מסכתות</h3>
+<div style="padding-top:10px; padding-left:16px; padding-right:16px;">
+<h3>📚 מסכתות</h3>
         <div id="masechtot"></div>
       </div>
     </div>
