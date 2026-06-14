@@ -103,22 +103,35 @@ function renderApp(user) {
 // ---------------- TODAY DAF ----------------
 async function loadTodayDaf() {
   try {
-    const API_URL = "https://script.google.com/macros/s/AKfycbzDFwGe8HCqBibs2i8WvwCWNLmbdTVZ7P_oeeHdCEHzHTQWmQQZdciKf0ZrPSaOdkep/exec";
-    const res = await fetch(`${API_URL}?action=dafyomi`);
-    const data = await res.json();
+    // תאריך התחלה: 14 ביוני 2026 = חולין דף 45
+    const startDate = new Date(2026, 5, 14); // 14 ביוני 2026
+    const startDaf = 45;
+    const startMasechet = "חולין";
     
-    if (data.current_daf) {
-      const masechetMap = {
-        "Chullin": "חולין",
-        // ... (שאר המפה)
-      };
+    const today = new Date();
+    const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
 
-      const masechet = masechetMap[data.current_daf.masechta] || data.current_daf.masechta;
-      const daf = data.current_daf.daf;
-      const focusDaf = `דף ${toGemaraDaf(daf)}`;
-      
-      await openMasechet(masechet, focusDaf);
+    // מערך מסכתות בסדר הדף היומי
+    const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
+
+    // מצא את אינדקס התחלה (חולין)
+    let startIndex = masechtosList.findIndex(m => m.name === startMasechet);
+    let currentDaf = startDaf + daysPassed;
+
+    // חשב מסכת ודף חדשים עם סיבוב
+    let masechetIndex = startIndex;
+    let dafNumber = currentDaf;
+
+    while (dafNumber > masechtosList[masechetIndex].dapim) {
+      dafNumber -= masechtosList[masechetIndex].dapim;
+      masechetIndex = (masechetIndex + 1) % masechtosList.length;
     }
+
+    const focusMasechet = masechtosList[masechetIndex].name;
+    const focusDaf = `דף ${toGemaraDaf(dafNumber)}`;
+
+    console.log(`Today: ${focusMasechet} ${focusDaf}`);
+    await openMasechet(focusMasechet, focusDaf);
   } catch (err) {
     console.error("Error:", err);
     showToast("שגיאה בטעינת הדף היומי");
