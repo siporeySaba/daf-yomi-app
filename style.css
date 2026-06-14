@@ -136,24 +136,25 @@ button:hover {
 .stickyHeader {
   position: sticky;
   top: 0;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
   z-index: 50;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.stickyHeader .primary-btn,
+.stickyHeader .secondary-btn {
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: auto;
 }
 
 .stickyHeader h2 {
   font-size: 24px;
   margin: 0;
   color: #1f2937;
-}
-
-.stickyHeader .primary-btn,
-.stickyHeader .secondary-btn {
-  border-radius: 10px;
-  padding: 11px 20px;
-  font-size: 14px;
-  font-weight: 600;
 }
 
 #todayDafDisplay {
