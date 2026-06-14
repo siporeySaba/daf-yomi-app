@@ -38,11 +38,11 @@ h3 {
 /* =========================
    CARDS
 ========================= */
-.card {
+.card[style*="background"] {
   background: white;
-  border-radius: 16px;
-  padding: 14px;
-  margin: 10px 0;
+  padding: 8px 12px !important;
+  margin: 4px 0 !important;
+  border-radius: 8px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.04);
   transition: 0.2s;
@@ -51,6 +51,7 @@ h3 {
 .card:hover {
   transform: translateY(-2px);
 }
+
 
 /* =========================
    BUTTONS
