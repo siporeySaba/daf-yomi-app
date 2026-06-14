@@ -531,6 +531,7 @@ async function saveDafStatus(masechet, daf, status) {
 // ---------------- BACK ----------------
 window.goBack = function () {
   renderApp(auth.currentUser);
+  window.history.back();
 };
 
 // ----------- TOAST -----------
