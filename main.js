@@ -73,6 +73,14 @@ function renderLogin() {
     await signInWithPopup(auth, provider);
   };
 }
+// ---------------Register Service Worker------------------
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js').then(reg => {
+    console.log('✅ Service Worker registered');
+  }).catch(err => {
+    console.log('❌ Service Worker registration failed:', err);
+  });
+}
 
 // ---------------- APP ----------------
 function renderApp(user) {
@@ -542,14 +550,6 @@ function showToast(msg) {
   setTimeout(() => toast.style.opacity = "0", 2500);
 }
 
-// ---------------Register Service Worker------------------
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js').then(reg => {
-    console.log('✅ Service Worker registered');
-  }).catch(err => {
-    console.log('❌ Service Worker registration failed:', err);
-  });
-}
 // ---------------- AUTH ----------------
 onAuthStateChanged(auth, (user) => {
   if (user) renderApp(user);
