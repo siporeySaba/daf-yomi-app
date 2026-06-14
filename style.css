@@ -47,6 +47,73 @@ body.dark-mode {
   color: var(--text-dark);
 }
 
+body.dark-mode {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+body.dark-mode * {
+  color: inherit;
+}
+
+body.dark-mode .card,
+body.dark-mode .stickyHeader,
+body.dark-mode .summary-card,
+body.dark-mode .progress-list,
+body.dark-mode .masechta-card {
+  background-color: var(--bg-dark-2);
+  border-color: var(--border-dark);
+  color: var(--text-dark);
+}
+
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode span,
+body.dark-mode p,
+body.dark-mode div {
+  color: var(--text-dark) !important;
+}
+
+body.dark-mode button {
+  color: white;
+}
+
+body.dark-mode .primary-btn {
+  background: #6366f1;
+  color: white;
+}
+
+body.dark-mode .secondary-btn {
+  background: var(--bg-dark);
+  color: var(--text-dark);
+  border: 1px solid var(--border-dark);
+}
+
+body.dark-mode #todayDafDisplay {
+  background: var(--bg-dark);
+  border-color: var(--border-dark);
+  color: var(--text-dark-2);
+}
+
+body.dark-mode .summary-label,
+body.dark-mode .progress-stats {
+  color: var(--text-dark-2);
+}
+
+body.dark-mode .progress-row {
+  border-bottom-color: var(--border-dark);
+  color: var(--text-dark);
+}
+
+body.dark-mode .progress-masechet {
+  color: var(--text-dark);
+}
+
+body.dark-mode .summary-number {
+  color: var(--text-dark) !important;
+}
+
 /* Update all elements for dark mode */
 body.dark-mode .card,
 body.dark-mode .stickyHeader,
