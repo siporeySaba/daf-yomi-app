@@ -20,7 +20,9 @@ const hundreds = [
 // חריגים (חובה בגמרא)
 const special = {
   15: "ט״ו",
-  16: "ט״ז"
+  16: "ט״ז",
+  115: "קטו״",
+  116: "קטז״",
 };
 
 export function toGemaraDaf(num) {
