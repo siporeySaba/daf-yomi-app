@@ -151,7 +151,7 @@ async function loadTodayDafDisplay() {
     let masechetIndex = startIndex;
     let dafNumber = currentDaf;
 
-    while (dafNumber > masechtosList[masechetIndex].dapim) {
+    while (dafNumber > masechtosList[masechetIndex].dapim-1) {
       dafNumber -= masechtosList[masechetIndex].dapim;
       masechetIndex = (masechetIndex + 1) % masechtosList.length;
     }
@@ -186,7 +186,7 @@ async function loadTodayDaf() {
     let masechetIndex = startIndex;
     let dafNumber = currentDaf;
 
-    while (dafNumber > masechtosList[masechetIndex].dapim) {
+    while (dafNumber > masechtosList[masechetIndex].dapim-1) {
       dafNumber -= masechtosList[masechetIndex].dapim;
       masechetIndex = (masechetIndex + 1) % masechtosList.length;
     }
