@@ -155,11 +155,12 @@ async function loadTodayDafDisplay() {
     let masechetIndex = startIndex;
     let dafNumber = currentDaf;
 
-    while (dafNumber > masechtosList[masechetIndex].dapim-1) {
-      dafNumber -= masechtosList[masechetIndex].dapim;
+    while (dafNumber > masechtosList[masechetIndex].dapim - 1) {
+      dafNumber -= (masechtosList[masechetIndex].dapim - 1);
       masechetIndex = (masechetIndex + 1) % masechtosList.length;
     }
 
+    dafNumber += 1; // כי כל מסכת מתחילה בדף 2
     const focusMasechet = masechtosList[masechetIndex].name;
     const focusDafStr = toGemaraDaf(dafNumber);
 
@@ -190,10 +191,12 @@ async function loadTodayDaf() {
     let masechetIndex = startIndex;
     let dafNumber = currentDaf;
 
-    while (dafNumber > masechtosList[masechetIndex].dapim-1) {
-      dafNumber -= masechtosList[masechetIndex].dapim;
+    while (dafNumber > masechtosList[masechetIndex].dapim - 1) {
+      dafNumber -= (masechtosList[masechetIndex].dapim - 1);
       masechetIndex = (masechetIndex + 1) % masechtosList.length;
     }
+
+    dafNumber += 1; // כי כל מסכת מתחילה בדף 2
 
     const focusMasechet = masechtosList[masechetIndex].name;
     const focusDafStr = toGemaraDaf(dafNumber);
