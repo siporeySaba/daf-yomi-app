@@ -143,6 +143,11 @@ async function loadTodayDafDisplay() {
     const today = new Date();
     const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
 
+    const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+    console.log("Today's date:", today.toISOString().split('T')[0]);
+    console.log("Start date:", startDate.toISOString().split('T')[0]);
+    console.log("Days passed:", daysPassed);
+    
     const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
 
     let startIndex = masechtosList.findIndex(m => m.name === startMasechet);
