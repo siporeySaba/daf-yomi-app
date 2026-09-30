@@ -136,7 +136,7 @@ function renderApp(user) {
 
 async function loadTodayDafDisplay() {
   try {
-    const startDate = new Date(2026, 5, 14);
+  const startDate = new Date('2026-06-14');
     const startMasechet = "חולין";
     const startDaf = 45;
 
@@ -160,7 +160,6 @@ async function loadTodayDafDisplay() {
       masechetIndex = (masechetIndex + 1) % masechtosList.length;
     }
 
-    dafNumber += 1; // כי כל מסכת מתחילה בדף 2
     const focusMasechet = masechtosList[masechetIndex].name;
     const focusDafStr = toGemaraDaf(dafNumber);
 
@@ -176,7 +175,7 @@ async function loadTodayDafDisplay() {
 
 async function loadTodayDaf() {
   try {
-    const startDate = new Date(2026, 5, 14);
+    const startDate = new Date('2026-06-14');
     const startMasechet = "חולין";
     const startDaf = 45;
 
@@ -195,8 +194,6 @@ async function loadTodayDaf() {
       dafNumber -= (masechtosList[masechetIndex].dapim - 1);
       masechetIndex = (masechetIndex + 1) % masechtosList.length;
     }
-
-    dafNumber += 1; // כי כל מסכת מתחילה בדף 2
 
     const focusMasechet = masechtosList[masechetIndex].name;
     const focusDafStr = toGemaraDaf(dafNumber);
