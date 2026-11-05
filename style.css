@@ -553,3 +553,63 @@ h1, h2, h3 { margin: 0; }
 @media (min-width: 700px) {
   .d-grid { grid-template-columns: repeat(auto-fill, minmax(66px, 1fr)); }
 }
+
+/* =========================
+   NOTES
+========================= */
+.hero-note {
+  display: block; width: 100%;
+  margin-bottom: 12px;
+  padding: 9px 12px;
+  border: 1px dashed rgba(255,255,255,.45);
+  border-radius: 12px;
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  font: inherit; font-size: 14px;
+  text-align: right;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hero-note:hover { background: rgba(255,255,255,.18); }
+
+.d-tile.has-note::before {
+  content: "📝";
+  position: absolute; bottom: 2px; left: 4px;
+  font-size: 10px;
+}
+
+.note-box {
+  display: grid; gap: 8px;
+  margin: 4px 0 14px;
+  padding: 12px;
+  background: var(--surface-2);
+  border-radius: 14px;
+}
+.note-box label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.note-box textarea {
+  width: 100%;
+  font: inherit; font-size: 16px; line-height: 1.5;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface); color: var(--text);
+  resize: vertical;
+}
+.note-box textarea:focus { outline: 2px solid var(--brand); outline-offset: -1px; border-color: transparent; }
+.note-actions { display: flex; gap: 8px; }
+.note-actions .btn { flex: 1; min-height: 40px; padding: 8px 12px; }
+
+.section-title { font-size: 14px; color: var(--muted); margin: 18px 4px 10px; }
+.notes-list { margin-bottom: 4px; }
+.note-row {
+  display: grid; gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  background: none; border: none;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+.note-row:last-child { border-bottom: none; }
+.note-row:hover { background: var(--surface-2); }
+.note-daf { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.note-daf .chip { font-size: 11px; padding: 1px 8px; }
+.note-text { color: var(--muted); font-size: 14px; }

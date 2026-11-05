@@ -197,6 +197,7 @@ function statusLabel(s) {
 function renderHome() {
   const today = dafYomiFor();
   const todayStatus = store.status(today.masechet, today.str);
+  const todayNote = store.note(today.masechet, today.str);
   const firstName = (user.displayName || "").split(" ")[0];
 
   const now = new Date();
@@ -242,6 +243,9 @@ function renderHome() {
         </div>
         <div class="hero-daf">${esc(today.masechet)} <strong>${hebNumeral(today.num)}</strong></div>
         ${todayStatus ? `<div class="chip ${todayStatus}">${todayStatus === "learned" ? "✓ נלמד" : "⏭ דולג"}</div>` : ""}
+        <button class="hero-note" data-action="note" data-m="${esc(today.masechet)}" data-d="${esc(today.str)}" data-num="${today.num}">
+          ${todayNote ? `📝 ${esc(todayNote)}` : `📝 הוסף הערה – עד איפה הגעתי`}
+        </button>
         <div class="hero-actions">
           ${todayStatus === "learned"
             ? `<button class="btn ghost" data-action="clear" data-m="${esc(today.masechet)}" data-d="${esc(today.str)}">בטל סימון</button>`
@@ -268,8 +272,9 @@ function renderMasechet(name, focus) {
   const tiles = dafList(m).map(d => {
     const s = store.status(name, d.str);
     const isToday = name === today.masechet && d.str === today.str;
+    const hasNote = !!store.note(name, d.str);
     return `
-      <button class="d-tile${s ? " " + s : ""}${isToday ? " is-today" : ""}"
+      <button class="d-tile${s ? " " + s : ""}${isToday ? " is-today" : ""}${hasNote ? " has-note" : ""}"
               id="daf-${d.num}" data-action="daf" data-num="${d.num}" data-d="${esc(d.str)}"
               aria-label="דף ${esc(d.str)} ${statusLabel(s)}">
         ${esc(d.str.replace("׳", ""))}
@@ -285,6 +290,7 @@ function renderMasechet(name, focus) {
         <span><i class="dot learned"></i>נלמד</span>
         <span><i class="dot skipped"></i>דולג</span>
         <span><i class="dot today"></i>היום</span>
+        <span>📝 הערה</span>
         <button class="link-btn" data-action="masechet-menu" data-m="${esc(name)}">סימון מרובה ⋯</button>
       </div>
     </div>
@@ -313,6 +319,7 @@ function refreshMasechetUI(name) {
     const s = store.status(name, t.dataset.d);
     t.classList.toggle("learned", s === "learned");
     t.classList.toggle("skipped", s === "skipped");
+    t.classList.toggle("has-note", !!store.note(name, t.dataset.d));
   });
   const bar = document.getElementById("mBar");
   const txt = document.getElementById("mProgress");
@@ -337,11 +344,21 @@ function closeSheet() {
   document.querySelectorAll(".sheet-wrap").forEach(el => el.remove());
 }
 
-function dafSheet(name, dStr, num) {
+function dafSheet(name, dStr, num, { focusNote = false } = {}) {
   const s = store.status(name, dStr);
+  const note = store.note(name, dStr);
   openSheet(`
     <div class="sheet-title">${esc(name)} דף ${hebNumeral(num)}</div>
     ${s ? `<div class="chip ${s}">${s === "learned" ? "✓ נלמד" : "⏭ דולג"}</div>` : ""}
+    <div class="note-box">
+      <label for="noteInput">📝 הערה – עד איפה הגעתי</label>
+      <textarea id="noteInput" rows="2" maxlength="500"
+        placeholder="לדוגמה: הגעתי עד &quot;דרבי מאיר סבר: חמש ולא חצי חמש&quot;">${esc(note)}</textarea>
+      <div class="note-actions">
+        <button class="btn soft" data-action="save-note" data-m="${esc(name)}" data-d="${esc(dStr)}">שמור הערה</button>
+        ${note ? `<button class="btn ghost" data-action="delete-note" data-m="${esc(name)}" data-d="${esc(dStr)}">מחק הערה</button>` : ""}
+      </div>
+    </div>
     <div class="sheet-actions">
       ${s !== "learned" ? `<button class="btn primary" data-action="mark" data-status="learned" data-m="${esc(name)}" data-d="${esc(dStr)}">✓ למדתי</button>` : ""}
       ${s !== "skipped" ? `<button class="btn soft" data-action="mark" data-status="skipped" data-m="${esc(name)}" data-d="${esc(dStr)}">⏭ דילגתי</button>` : ""}
@@ -349,6 +366,7 @@ function dafSheet(name, dStr, num) {
       <a class="btn soft" href="${sefariaUrl(name, num)}" target="_blank" rel="noopener">📖 ללמוד בספריא</a>
     </div>
   `);
+  if (focusNote) setTimeout(() => document.getElementById("noteInput")?.focus(), 250);
 }
 
 function masechetMenu(name) {
@@ -368,6 +386,23 @@ function masechetMenu(name) {
 // -------------------------------
 function renderProgress() {
   let learned = 0, skipped = 0, total = 0;
+  const order = new Map(MASECHTOT.map((m, i) => [m.name, i]));
+  const noted = store.all()
+    .filter(p => p.note && BY_NAME[p.masechet])
+    .map(p => ({ ...p, num: dafList(BY_NAME[p.masechet]).find(d => d.str === p.daf)?.num }))
+    .filter(p => p.num)
+    .sort((a, b) => order.get(a.masechet) - order.get(b.masechet) || a.num - b.num);
+  const notesHtml = noted.length ? `
+      <h3 class="section-title">📝 דפים עם הערות (${noted.length})</h3>
+      <div class="p-list notes-list">
+        ${noted.map(p => `
+          <button class="note-row" data-action="nav" data-to="#/m/${encodeURIComponent(p.masechet)}?d=${encodeURIComponent(p.daf)}">
+            <span class="note-daf">${esc(p.masechet)} ${hebNumeral(p.num)}
+              ${p.status ? `<span class="chip ${p.status}">${p.status === "learned" ? "נלמד" : "דולג"}</span>` : ""}
+            </span>
+            <span class="note-text">${esc(p.note)}</span>
+          </button>`).join("")}
+      </div>` : "";
   const rows = MASECHTOT.map(m => {
     const c = countFor(m);
     learned += c.learned; skipped += c.skipped; total += c.total;
@@ -389,6 +424,8 @@ function renderProgress() {
         <div class="stat"><div class="stat-num">${pct(learned, total)}%</div><div class="stat-label">מתוך ${total}</div></div>
         ${settings.streak ? `<div class="stat"><div class="stat-num">🔥 ${streakDays()}</div><div class="stat-label">ימים ברצף</div></div>` : ""}
       </div>
+      ${notesHtml}
+      <h3 class="section-title">📚 לפי מסכת</h3>
       <div class="p-list">${rows}</div>
     </main>
   `;
@@ -506,8 +543,7 @@ function downloadIcs() {
 // -------------------------------
 async function markDaf(name, dStr, status) {
   try {
-    if (status) await store.set(name, dStr, status);
-    else await store.clear(name, dStr);
+    await store.setStatus(name, dStr, status || null);
     showToast(status === "learned" ? "✅ כל הכבוד, עוד דף לאוסף"
       : status === "skipped" ? "⏭ בעזרת ה' תזכה להשלים" : "↩ הסימון בוטל");
   } catch (err) {
@@ -555,6 +591,20 @@ document.addEventListener("click", async e => {
     case "daf": return dafSheet(el.closest(".d-grid").dataset.m, el.dataset.d, Number(el.dataset.num));
     case "masechet-menu": return masechetMenu(el.dataset.m);
     case "mark-all": return markAll(el.dataset.m, el.dataset.status);
+    case "note": return dafSheet(el.dataset.m, el.dataset.d, Number(el.dataset.num), { focusNote: true });
+    case "save-note":
+    case "delete-note": {
+      const name = el.dataset.m, dStr = el.dataset.d;
+      const text = action === "save-note" ? document.getElementById("noteInput")?.value : "";
+      el.disabled = true;
+      const p = store.setNote(name, dStr, text)
+        .then(() => showToast(text?.trim() ? "📝 ההערה נשמרה" : "🗑 ההערה נמחקה"))
+        .catch(err => { console.error(err); showToast("❌ השמירה נכשלה, בדוק חיבור לאינטרנט"); });
+      afterChange(name);
+      await p;
+      afterChange(name, false);
+      return;
+    }
     case "ics": return downloadIcs();
     case "theme":
       saveSettings({ theme: el.dataset.v });

@@ -1,5 +1,5 @@
 // Network-first: תמיד מנסה להביא את הגרסה העדכנית, ונופל למטמון רק בלי אינטרנט.
-const CACHE_NAME = 'daf-yomi-v2';
+const CACHE_NAME = 'daf-yomi-v3';
 const urlsToCache = [
   './',
   './index.html',

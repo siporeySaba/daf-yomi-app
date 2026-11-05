@@ -1,17 +1,18 @@
 // -------------------------------
 // 💾 PROGRESS STORE
 // Firestore format (לא לשנות – משתמשים קיימים):
-// users/{uid}/progress/{masechet}_{daf}  →  { masechet, daf, status, timestamp }
+// users/{uid}/progress/{masechet}_{daf}  →  { masechet, daf, status, timestamp, note?, noteUpdated? }
+// status יכול להיות חסר אם יש רק הערה.
 // -------------------------------
 import {
-  collection, getDocs, doc, setDoc, deleteDoc, writeBatch
+  collection, getDocs, doc, setDoc, deleteDoc, writeBatch, deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 import { db } from "./firebase.js";
 
 const key = (masechet, daf) => `${masechet}_${daf}`;
 
 export function createStore(uid, { demo = false } = {}) {
-  // key → { masechet, daf, status, timestamp }
+  // key → { masechet, daf, status?, timestamp?, note?, noteUpdated? }
   const cache = new Map();
   let loaded = null;
 
@@ -26,6 +27,28 @@ export function createStore(uid, { demo = false } = {}) {
     });
   }
 
+  // מחזיר את הרשומה החדשה בזיכרון + הפעולה לביצוע ב-Firestore
+  function applyStatus(masechet, daf, status, timestamp) {
+    const k = key(masechet, daf);
+    const prev = cache.get(k);
+    if (status) {
+      cache.set(k, { ...prev, masechet, daf, status, timestamp });
+      return { op: "merge", data: { masechet, daf, status, timestamp } };
+    }
+    if (prev?.note) {
+      // יש הערה – מוחקים רק את הסטטוס ומשאירים את ההערה
+      const { status: _s, timestamp: _t, ...rest } = prev;
+      cache.set(k, rest);
+      return { op: "merge", data: { status: deleteField(), timestamp: deleteField() } };
+    }
+    cache.delete(k);
+    return { op: "delete" };
+  }
+
+  function rollback(entries) {
+    for (const [k, p] of entries) p ? cache.set(k, p) : cache.delete(k);
+  }
+
   return {
     ready() {
       if (!loaded) loaded = load().catch(err => { loaded = null; throw err; });
@@ -36,54 +59,70 @@ export function createStore(uid, { demo = false } = {}) {
       return cache.get(key(masechet, daf))?.status || null;
     },
 
+    note(masechet, daf) {
+      return cache.get(key(masechet, daf))?.note || "";
+    },
+
     all() {
       return [...cache.values()];
     },
 
-    async set(masechet, daf, status) {
-      const k = key(masechet, daf);
-      const prev = cache.get(k);
-      const data = { masechet, daf, status, timestamp: new Date().toISOString() };
-      cache.set(k, data);
-      try {
-        if (!demo) await setDoc(ref(masechet, daf), data);
-      } catch (err) {
-        prev ? cache.set(k, prev) : cache.delete(k);
-        throw err;
-      }
-    },
-
-    async clear(masechet, daf) {
-      const k = key(masechet, daf);
-      const prev = cache.get(k);
-      cache.delete(k);
-      try {
-        if (!demo) await deleteDoc(ref(masechet, daf));
-      } catch (err) {
-        if (prev) cache.set(k, prev);
-        throw err;
-      }
-    },
-
     // status = "learned" | "skipped" | null (null = ביטול סימון)
-    async setMany(masechet, dafs, status) {
-      const prev = new Map(dafs.map(d => [d, cache.get(key(masechet, d))]));
-      const timestamp = new Date().toISOString();
-      for (const d of dafs) {
-        if (status) cache.set(key(masechet, d), { masechet, daf: d, status, timestamp });
-        else cache.delete(key(masechet, d));
+    async setStatus(masechet, daf, status) {
+      const k = key(masechet, daf);
+      const prev = cache.get(k);
+      const action = applyStatus(masechet, daf, status, new Date().toISOString());
+      try {
+        if (demo) return;
+        if (action.op === "delete") await deleteDoc(ref(masechet, daf));
+        else await setDoc(ref(masechet, daf), action.data, { merge: true });
+      } catch (err) {
+        rollback([[k, prev]]);
+        throw err;
+      }
+    },
+
+    async setNote(masechet, daf, text) {
+      const k = key(masechet, daf);
+      const prev = cache.get(k);
+      const note = (text || "").trim().slice(0, 500);
+      let action;
+      if (note) {
+        const noteUpdated = new Date().toISOString();
+        cache.set(k, { ...prev, masechet, daf, note, noteUpdated });
+        action = { op: "merge", data: { masechet, daf, note, noteUpdated } };
+      } else if (prev?.status) {
+        const { note: _n, noteUpdated: _u, ...rest } = prev;
+        cache.set(k, rest);
+        action = { op: "merge", data: { note: deleteField(), noteUpdated: deleteField() } };
+      } else {
+        cache.delete(k);
+        action = { op: "delete" };
       }
       try {
-        if (!demo) {
-          const batch = writeBatch(db);
-          for (const d of dafs) {
-            if (status) batch.set(ref(masechet, d), { masechet, daf: d, status, timestamp });
-            else batch.delete(ref(masechet, d));
-          }
-          await batch.commit();
-        }
+        if (demo) return;
+        if (action.op === "delete") await deleteDoc(ref(masechet, daf));
+        else await setDoc(ref(masechet, daf), action.data, { merge: true });
       } catch (err) {
-        for (const [d, p] of prev) p ? cache.set(key(masechet, d), p) : cache.delete(key(masechet, d));
+        rollback([[k, prev]]);
+        throw err;
+      }
+    },
+
+    async setMany(masechet, dafs, status) {
+      const prev = dafs.map(d => [key(masechet, d), cache.get(key(masechet, d))]);
+      const timestamp = new Date().toISOString();
+      const actions = dafs.map(d => [d, applyStatus(masechet, d, status, timestamp)]);
+      try {
+        if (demo) return;
+        const batch = writeBatch(db);
+        for (const [d, a] of actions) {
+          if (a.op === "delete") batch.delete(ref(masechet, d));
+          else batch.set(ref(masechet, d), a.data, { merge: true });
+        }
+        await batch.commit();
+      } catch (err) {
+        rollback(prev);
         throw err;
       }
     },
