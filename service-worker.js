@@ -1,38 +1,53 @@
-const CACHE_NAME = 'daf-yomi-v1';
+// Network-first: תמיד מנסה להביא את הגרסה העדכנית, ונופל למטמון רק בלי אינטרנט.
+const CACHE_NAME = 'daf-yomi-v2';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './main.js',
   './firebase.js',
-  './gemaraRenderer.js'
+  './gemaraRenderer.js',
+  './schedule.js',
+  './store.js',
+  './manifest.json'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('Cache opened');
-      return cache.addAll(urlsToCache).catch(err => {
-        console.log('Cache error:', err);
-      });
-    })
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
+      .catch(err => console.log('Cache error:', err))
   );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', event => {
-  // רק cache GET requests
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  // רק קבצים של האפליקציה עצמה. Firebase/גוגל עוברים ישירות לרשת.
+  if (new URL(req.url).origin !== self.location.origin) return;
 
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request).catch(() => {
-        return caches.match('./index.html');
-      });
-    })
+    fetch(req)
+      .then(res => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+        }
+        return res;
+      })
+      .catch(() =>
+        caches.match(req, { ignoreSearch: true }).then(r =>
+          r || (req.mode === 'navigate' ? caches.match('./index.html') : undefined)
+        )
+      )
   );
 });

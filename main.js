@@ -1,558 +1,617 @@
-import {
-  collection,
-  getDocs,
-  doc,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-import { db, auth, provider } from "./firebase.js";
-
+import { auth, provider } from "./firebase.js";
 import {
   signInWithPopup,
+  signInWithRedirect,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-import { toGemaraDaf } from "./gemaraRenderer.js";
-
-console.log("🚀 APP START");
+import {
+  MASECHTOT, SEDARIM, BY_NAME, dafCount, dafList,
+  dafYomiFor, sefariaUrl, hebrewDate, hebNumeral
+} from "./schedule.js";
+import { createStore } from "./store.js";
 
 const appDiv = document.getElementById("app");
 
-// DATA
-const masechetPages = {
-  "ברכות": 64,
-  "שבת": 157,
-  "עירובין": 105,
-  "פסחים": 121,
-  "שקלים": 22,
-  "יומא": 88,
-  "סוכה": 56,
-  "ביצה": 40,
-  "ראש השנה": 35,
-  "תענית": 31,
-  "מגילה": 32,
-  "מועד קטן": 29,
-  "חגיגה": 27,
-  "יבמות": 122,
-  "כתובות": 112,
-  "נדרים": 91,
-  "נזיר": 66,
-  "סוטה": 49,
-  "גיטין": 90,
-  "קידושין": 82,
-  "בבא קמא": 119,
-  "בבא מציעא": 119,
-  "בבא בתרא": 176,
-  "סנהדרין": 113,
-  "מכות": 24,
-  "שבועות": 49,
-  "עבודה זרה": 76,
-  "הוריות": 14,
-  "זבחים": 120,
-  "מנחות": 110,
-  "חולין": 142,
-  "בכורות": 61,
-  "ערכין": 34,
-  "תמורה": 34,
-  "כריתות": 28,
-  "מעילה": 22,
-  "נדה": 73
-};
+// -------------------------------
+// ⚙️ SETTINGS (per device, optional features are OFF by default)
+// -------------------------------
+const SETTINGS_KEY = "dafyomi.settings";
+const DEFAULT_SETTINGS = { theme: "auto", streak: false, reminder: false, reminderTime: "20:00" };
 
-// SERVICE WORKER
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js').then(reg => {
-    console.log('✅ Service Worker registered');
-  }).catch(err => {
-    console.log('❌ Service Worker registration failed:', err);
-  });
-}
-
-// BACK BUTTON
-window.addEventListener('popstate', () => {
-  if (appDiv.innerHTML.includes('stickyHeader') === false) {
-    renderApp(auth.currentUser);
-  }
-});
-
-// LOGIN
-function renderLogin() {
-  appDiv.innerHTML = `
-    <div style="padding:20px; text-align:center">
-      <h2>דף יומי</h2>
-      <button id="loginBtn">התחבר עם Google</button>
-    </div>
-  `;
-
-  document.getElementById("loginBtn").onclick = async () => {
-    await signInWithPopup(auth, provider);
-  };
-}
-
-// APP
-function renderApp(user) {
-  appDiv.innerHTML = `
-    <div style="direction: rtl;">
-      <div style="padding:20px 16px; text-align:center; background:white; border-bottom:1px solid #e5e7eb;">
-        <h2 style="margin:0; font-size:24px;">שלום, ${user.displayName}!</h2>
-      </div>
-
-      <div class="stickyHeader" style="padding:12px 16px;">
-        <div style="display:flex; gap:10px; justify-content:center;">
-          <button id="todayBtn" class="primary-btn" style="flex:1; max-width:160px; padding:10px;">📅 הדף היומי</button>
-          <button id="progressBtn" class="secondary-btn" style="flex:1; max-width:160px; padding:10px;">📊 התקדמות</button>
-          <button id="logoutBtn" class="secondary-btn" style="flex:1; max-width:160px; padding:10px;">🚪 התנתק</button>
-        </div>
-
-        <div id="todayDafDisplay" style="
-          text-align:center;
-          background:#f9fafb;
-          padding:10px;
-          border-radius:8px;
-          font-size:13px;
-          color:#666;
-          margin-top:10px;
-          border:1px solid #e5e7eb;
-        ">
-          ⏳ טוען דף יומי...
-        </div>
-      </div>
-
-      <div style="padding-top:10px; padding-left:16px; padding-right:16px;">
-        <h3>📚 מסכתות</h3>
-        <div id="masechtot"></div>
-      </div>
-    </div>
-  `;
-
-  document.getElementById("logoutBtn").onclick = () => signOut(auth);
-  document.getElementById("todayBtn").onclick = loadTodayDaf;
-  document.getElementById("progressBtn").onclick = loadProgress;
-
-  loadTodayDafDisplay();
-  loadMasechtot();
-}
-
-async function loadTodayDafDisplay() {
+function loadSettings() {
   try {
-  const startDate = new Date('2026-06-14');
-    const startMasechet = "חולין";
-    const startDaf = 45;
-
-    const today = new Date();
-    const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-
-    console.log("Today's date:", today.toISOString().split('T')[0]);
-    console.log("Start date:", startDate.toISOString().split('T')[0]);
-    console.log("Days passed:", daysPassed);
-    
-    const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
-
-    let startIndex = masechtosList.findIndex(m => m.name === startMasechet);
-    let currentDaf = startDaf + daysPassed;
-
-    let masechetIndex = startIndex;
-    let dafNumber = currentDaf;
-
-    while (dafNumber > masechtosList[masechetIndex].dapim - 1) {
-      dafNumber -= (masechtosList[masechetIndex].dapim - 1);
-      masechetIndex = (masechetIndex + 1) % masechtosList.length;
-    }
-
-    const focusMasechet = masechtosList[masechetIndex].name;
-    const focusDafStr = toGemaraDaf(dafNumber);
-
-    const displayEl = document.getElementById("todayDafDisplay");
-    if (displayEl) {
-      displayEl.innerHTML = `📖 <strong>הדף היומי:</strong> ${focusMasechet} דף ${focusDafStr}`;
-      displayEl.style.color = "#333";
-    }
-  } catch (err) {
-    console.error("Error loading today's daf display:", err);
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
   }
 }
+let settings = loadSettings();
 
-async function loadTodayDaf() {
-  try {
-    const startDate = new Date('2026-06-14');
-    const startMasechet = "חולין";
-    const startDaf = 45;
-
-    const today = new Date();
-    const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-
-    const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
-
-    let startIndex = masechtosList.findIndex(m => m.name === startMasechet);
-    let currentDaf = startDaf + daysPassed;
-
-    let masechetIndex = startIndex;
-    let dafNumber = currentDaf;
-
-    while (dafNumber > masechtosList[masechetIndex].dapim - 1) {
-      dafNumber -= (masechtosList[masechetIndex].dapim - 1);
-      masechetIndex = (masechetIndex + 1) % masechtosList.length;
-    }
-
-    const focusMasechet = masechtosList[masechetIndex].name;
-    const focusDafStr = toGemaraDaf(dafNumber);
-    const focusDaf = `דף ${focusDafStr}`;
-
-    console.log(`Today: ${focusMasechet} ${focusDaf}`);
-    await openMasechet(focusMasechet, focusDaf);
-  } catch (err) {
-    console.error("Error:", err);
-    showToast("שגיאה בטעינת הדף היומי");
-  }
+function saveSettings(patch) {
+  settings = { ...settings, ...patch };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
+  applyTheme();
 }
 
-function loadMasechtot() {
-  const container = document.getElementById("masechtot");
-
-  container.innerHTML = Object.keys(masechetPages)
-    .map(name => `
-      <div class="card" onclick="openMasechet('${name}')">
-        📘 ${name}
-      </div>
-    `).join("");
+function applyTheme() {
+  const root = document.documentElement;
+  if (settings.theme === "auto") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", settings.theme);
 }
+applyTheme();
 
-window.openMasechet = async function(name, focusDaf = null) {
-  const user = auth.currentUser;
-  const total = masechetPages[name];
-  
-  if (!total) {
-    appDiv.innerHTML = `
-      <div class="card">
-        <button onclick="goBack()">⬅ חזור</button>
-        <p>❌ לא נמצא מידע על המסכת: ${name}</p>
-      </div>
-    `;
-    return;
-  }
+// -------------------------------
+// 🔧 HELPERS
+// -------------------------------
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  window.history.pushState({ page: 'masechet', masechet: name }, '', '#masechet');
-
-  const progressSnap = await getDocs(collection(db, "users", user.uid, "progress"));
-  const saved = {};
-  progressSnap.forEach(d => {
-    const data = d.data();
-    if (data.masechet === name) {
-      saved[data.daf] = data.status;
-    }
-  });
-
-  const learnedCount = Object.values(saved)
-    .filter(v => v === "learned")
-    .length;
-
-  const percent = Math.round((learnedCount / (total - 1)) * 100);
-
-  const dapim = Array.from({ length: total - 1 }, (_, i) => {
-    const dafNumber = i + 2;
-    const dafStr = toGemaraDaf(dafNumber);
-    const status = saved[dafStr];
-
-    const bgColor = status === "learned" ? "#10b981"
-      : status === "skipped" ? "#dc2626"
-        : "white";
-
-    const textColor = (status === "learned" || status === "skipped") ? "white" : "inherit";
-
-    return `
-      <div id="card-${dafStr}"
-        class="card"
-        data-status="${status}"
-        style="display:flex; justify-content:space-between; align-items:center; direction:rtl; background:${bgColor}; padding:6px 12px; margin:3px 0; border-radius:8px;">
-        <span id="text-${dafStr}" style="color:${textColor}; font-weight:${status ? '600' : '400'}">
-          📄 דף ${dafStr}
-        </span>
-        <div style="display:flex; gap:6px;">
-          <button onclick="markLearned('${name}','${dafStr}')" title="למדתי">✔️</button>
-          <button onclick="markSkipped('${name}','${dafStr}')" title="דילגתי">⏭️</button>
-        </div>
-      </div>
-    `;
-  });
-
-  appDiv.innerHTML = `
-    <div style="direction:rtl">
-      <div class="stickyHeader">
-        <button onclick="goBack()">
-          ⬅ חזרה
-        </button>
-
-        <div style="flex:1">
-          <h2 style="margin:0">${name}</h2>
-          <div class="progressOuter">
-            <div class="progressInner" id="progressBar" style="width:${percent}%"></div>
-          </div>
-          <small id="progressText">
-            ${learnedCount} / ${total - 1} דפים (${percent}%)
-          </small>
-        </div>
-
-        <button onclick="markAll('${name}','learned')" title="סימן הכל כנלמד">
-          ✅
-        </button>
-
-        <button onclick="markAll('${name}','skipped')" title="סימן הכל כדולג">
-          ⏭
-        </button>
-      </div>
-
-      <div style="padding-top:70px">
-        <h2>${name}</h2>
-        ${dapim.join("")}
-      </div>
-    </div>
-  `;
-
-  if (focusDaf) {
-    console.log("🔍 Starting focus search for:", focusDaf);
-    
-    setTimeout(() => {
-      console.log("⏱️ setTimeout triggered, looking for cards...");
-      
-      const cards = document.querySelectorAll('[id^="card-"]');
-      console.log("📋 Total cards found:", cards.length);
-      
-      let found = false;
-      
-      for (let i = 0; i < cards.length; i++) {
-        const card = cards[i];
-        const cardText = card.textContent;
-        const cardId = card.id;
-        
-        console.log(`Card ${i}: ID="${cardId}", Text="${cardText}"`);
-        
-        if (cardText.includes(focusDaf)) {
-          console.log("✅ MATCH FOUND! Card text includes:", focusDaf);
-          console.log("📍 Scrolling to card...");
-          
-          found = true;
-          
-          card.scrollIntoView({ behavior: "smooth", block: "center" });
-          console.log("🎨 Setting background to yellow...");
-          
-          card.style.background = "#fef08a";
-          card.style.transition = "background 2s ease";
-          
-          setTimeout(() => {
-            const status = card.getAttribute("data-status");
-            console.log("📊 Card status:", status);
-            
-            const finalBg = status === "learned" ? "#10b981" : status === "skipped" ? "#dc2626" : "white";
-            console.log("🔄 Reverting background to:", finalBg);
-            
-            card.style.background = finalBg;
-          }, 2000);
-          
-          break;
-        }
-      }
-      
-      if (!found) {
-        console.log("❌ NO MATCH FOUND! Looking for focusDaf:", focusDaf);
-        console.log("📌 All card texts:");
-        cards.forEach((card, i) => {
-          console.log(`  Card ${i}: "${card.textContent.trim()}"`);
-        });
-      }
-    }, 200);
-    
-    console.log("✨ Focus logic set up");
-  }
-};
-
-async function loadProgress() {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const progressSnap = await getDocs(collection(db, "users", user.uid, "progress"));
-  const progress = {};
-  
-  progressSnap.forEach(d => {
-    const data = d.data();
-    const masechet = data.masechet;
-    if (!progress[masechet]) progress[masechet] = { learned: 0, skipped: 0 };
-    if (data.status === "learned") progress[masechet].learned++;
-    else if (data.status === "skipped") progress[masechet].skipped++;
-  });
-
-  const masechtosList = Object.entries(masechetPages).map(([name, dapim]) => ({ name, dapim }));
-
-  let totalLearned = 0, totalSkipped = 0, totalDapim = 0;
-
-  const rows = masechtosList.map(m => {
-    const total = m.dapim - 1;
-    const learned = progress[m.name]?.learned || 0;
-    const skipped = progress[m.name]?.skipped || 0;
-    const percent = Math.round((learned / total) * 100);
-
-    totalLearned += learned;
-    totalSkipped += skipped;
-    totalDapim += total;
-
-    return `
-      <div class="progress-row">
-        <div class="progress-masechet">📖 ${m.name}</div>
-        <div class="progress-bar-container">
-          <div class="progress-bar">
-            <div class="progress-fill" style="width:${percent}%"></div>
-          </div>
-        </div>
-        <div class="progress-stats">
-          <span class="learned">✅ ${learned}</span>
-          <span class="separator">/</span>
-          <span class="total">${total}</span>
-          <span class="percent">${percent}%</span>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  const totalPercent = Math.round((totalLearned / totalDapim) * 100);
-
-  appDiv.innerHTML = `
-    <div style="direction:rtl; padding:16px;">
-      <button onclick="goBack()" style="margin-bottom:20px;">⬅ חזור</button>
-
-      <h2>📊 התקדמותך</h2>
-
-      <div class="progress-summary">
-        <div class="summary-card">
-          <div class="summary-label">נלמדו</div>
-          <div class="summary-number" style="color:#10b981;">${totalLearned}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-label">דולגו</div>
-          <div class="summary-number" style="color:#ef4444;">${totalSkipped}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-label">סה״כ</div>
-          <div class="summary-number">${totalDapim}</div>
-        </div>
-        <div class="summary-card">
-          <div class="summary-label">אחוז</div>
-          <div class="summary-number" style="color:#4f46e5;">${totalPercent}%</div>
-        </div>
-      </div>
-
-      <div class="progress-list">
-        ${rows}
-      </div>
-    </div>
-  `;
-}
-
-window.loadProgress = loadProgress;
-
-window.markLearned = async function(masechet, daf) {
-  await saveDafStatus(masechet, daf, "learned");
-  updateCardUI(daf, "learned");
-  updateProgressUI(masechet);
-};
-
-window.markSkipped = async function(masechet, daf) {
-  await saveDafStatus(masechet, daf, "skipped");
-  updateCardUI(daf, "skipped");
-  updateProgressUI(masechet);
-};
-
-window.markAll = async function(masechet, status) {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const total = masechetPages[masechet];
-
-  for (let i = 2; i <= total; i++) {
-    const dafStr = toGemaraDaf(i);
-    const ref = doc(db, "users", user.uid, "progress", `${masechet}_${dafStr}`);
-    await setDoc(ref, {
-      masechet,
-      daf: dafStr,
-      status,
-      timestamp: new Date().toISOString()
-    });
-
-    updateCardUI(dafStr, status);
-  }
-
-  updateProgressUI(masechet);
-  showToast(status === "learned" ? "✅ כל המסכת סומנה כנלמדה" : "⏭ כל המסכת סומנה כדולגה");
-};
-
-function updateProgressUI(masechet) {
-  const cards = document.querySelectorAll(`[id^="card-"]`);
-
-  let learned = 0;
-
-  cards.forEach(c => {
-    if (c.style.background === "rgb(16, 185, 129)") {
-      learned++;
-    }
-  });
-
-  const total = masechetPages[masechet] - 1;
-  const percent = Math.round((learned / total) * 100);
-
-  const progressBar = document.getElementById("progressBar");
-  const progressText = document.getElementById("progressText");
-
-  if (progressBar) {
-    progressBar.style.width = percent + "%";
-  }
-
-  if (progressText) {
-    progressText.innerText = `${learned} / ${total} דפים (${percent}%)`;
-  }
-}
-
-function updateCardUI(daf, status) {
-  const card = document.getElementById(`card-${daf}`);
-  const text = document.getElementById(`text-${daf}`);
-
-  if (!card || !text) return;
-
-  if (status === "learned") {
-    card.style.background = "#10b981";
-    text.style.color = "white";
-  } else {
-    card.style.background = "#dc2626";
-    text.style.color = "white";
-  }
-}
-
-async function saveDafStatus(masechet, daf, status) {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const ref = doc(db, "users", user.uid, "progress", `${masechet}_${daf}`);
-  await setDoc(ref, {
-    masechet,
-    daf,
-    status,
-    timestamp: new Date().toISOString()
-  });
-
-  showToast(status === "learned" ? "✅ כל הכבוד, עוד דף לאוסף" : "⏭ בעזרת ה' תזכה להשלים");
-}
-
-window.goBack = function () {
-  renderApp(auth.currentUser);
-  window.history.back();
-};
-
+let toastTimer;
 function showToast(msg) {
   const toast = document.getElementById("toast");
   toast.textContent = msg;
-  toast.style.opacity = "1";
-  setTimeout(() => toast.style.opacity = "0", 2500);
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
-onAuthStateChanged(auth, (user) => {
-  if (user) renderApp(user);
-  else renderLogin();
+function countFor(m) {
+  let learned = 0, skipped = 0;
+  for (const d of dafList(m)) {
+    const s = store.status(m.name, d.str);
+    if (s === "learned") learned++;
+    else if (s === "skipped") skipped++;
+  }
+  return { learned, skipped, total: dafCount(m) };
+}
+
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+
+function localDateKey(d) {
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function streakDays() {
+  const days = new Set();
+  for (const p of store.all()) {
+    if (p.status === "learned" && p.timestamp) {
+      const t = new Date(p.timestamp);
+      if (!isNaN(t)) days.add(localDateKey(t));
+    }
+  }
+  const d = new Date();
+  if (!days.has(localDateKey(d))) d.setDate(d.getDate() - 1); // עוד לא למדו היום – הרצף עדיין לא נשבר
+  let n = 0;
+  while (days.has(localDateKey(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+// -------------------------------
+// 🧭 ROUTER (hash based → כפתור "חזור" של הטלפון עובד)
+// -------------------------------
+let user = null;
+let store = null;
+let inAppNav = 0;
+
+function go(hash) {
+  inAppNav++;
+  location.hash = hash;
+}
+
+function goBack() {
+  if (inAppNav > 0) { inAppNav--; history.back(); }
+  else location.replace("#/");
+}
+
+function parseRoute() {
+  const h = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
+  const [path, query = ""] = h.split("?");
+  const params = new URLSearchParams(query);
+  const parts = path.split("/").filter(Boolean);
+  if (parts[0] === "m" && BY_NAME[parts[1]]) return { view: "masechet", name: parts[1], focus: params.get("d") };
+  if (parts[0] === "progress") return { view: "progress" };
+  if (parts[0] === "settings") return { view: "settings" };
+  return { view: "home" };
+}
+
+async function render() {
+  closeSheet();
+  if (!user) return;
+  try {
+    await store.ready();
+  } catch (err) {
+    console.error(err);
+    appDiv.innerHTML = `
+      <div class="empty">
+        <p>לא הצלחנו לטעון את ההתקדמות שלך.</p>
+        <button class="btn primary" data-action="retry">נסה שוב</button>
+      </div>`;
+    return;
+  }
+  const route = parseRoute();
+  if (route.view === "masechet") renderMasechet(route.name, route.focus);
+  else if (route.view === "progress") renderProgress();
+  else if (route.view === "settings") renderSettings();
+  else renderHome();
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener("hashchange", () => {
+  render();
 });
+
+// -------------------------------
+// 🔐 LOGIN
+// -------------------------------
+function renderLogin() {
+  appDiv.innerHTML = `
+    <div class="login">
+      <div class="login-logo">📖</div>
+      <h1>מעקב דף יומי</h1>
+      <p class="muted">${esc(hebrewDate())}</p>
+      <button class="btn primary big" data-action="login">התחבר עם Google</button>
+    </div>
+  `;
+}
+
+async function login() {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (err) {
+    if (err?.code === "auth/popup-blocked" || err?.code === "auth/operation-not-supported-in-this-environment") {
+      await signInWithRedirect(auth, provider);
+    } else if (err?.code !== "auth/popup-closed-by-user" && err?.code !== "auth/cancelled-popup-request") {
+      console.error(err);
+      showToast("ההתחברות נכשלה, נסה שוב");
+    }
+  }
+}
+
+// -------------------------------
+// 🏠 HOME
+// -------------------------------
+function topBar(title, { back = false, sub = "" } = {}) {
+  return `
+    <header class="topbar">
+      ${back
+        ? `<button class="icon-btn" data-action="back" aria-label="חזרה">→</button>`
+        : `<div class="brand">📖</div>`}
+      <div class="topbar-title">
+        <div class="title">${esc(title)}</div>
+        ${sub ? `<div class="sub">${sub}</div>` : ""}
+      </div>
+      ${back ? "" : `
+        <button class="icon-btn" data-action="nav" data-to="#/progress" aria-label="התקדמות">📊</button>
+        <button class="icon-btn" data-action="nav" data-to="#/settings" aria-label="הגדרות">⚙️</button>
+      `}
+    </header>
+  `;
+}
+
+function statusLabel(s) {
+  return s === "learned" ? "נלמד" : s === "skipped" ? "דולג" : "";
+}
+
+function renderHome() {
+  const today = dafYomiFor();
+  const todayStatus = store.status(today.masechet, today.str);
+  const firstName = (user.displayName || "").split(" ")[0];
+
+  const now = new Date();
+  const [rh, rm] = (settings.reminderTime || "20:00").split(":").map(Number);
+  const showReminder = settings.reminder && todayStatus !== "learned" &&
+    (now.getHours() > rh || (now.getHours() === rh && now.getMinutes() >= rm));
+
+  const streak = settings.streak ? streakDays() : 0;
+
+  const sedarim = SEDARIM.map(seder => {
+    const tiles = MASECHTOT.filter(m => m.seder === seder).map(m => {
+      const c = countFor(m);
+      const p = pct(c.learned, c.total);
+      const isToday = m.name === today.masechet;
+      const done = c.learned === c.total;
+      return `
+        <button class="m-tile${isToday ? " is-today" : ""}${done ? " is-done" : ""}"
+                data-action="nav" data-to="#/m/${encodeURIComponent(m.name)}">
+          ${isToday ? `<span class="badge">היום</span>` : done ? `<span class="badge done">✓</span>` : ""}
+          <span class="m-name">${esc(m.name)}</span>
+          <span class="m-bar"><span style="width:${p}%"></span></span>
+          <span class="m-count">${c.learned}/${c.total}</span>
+        </button>`;
+    }).join("");
+    return `
+      <section class="seder">
+        <h3>סדר ${esc(seder)}</h3>
+        <div class="m-grid">${tiles}</div>
+      </section>`;
+  }).join("");
+
+  appDiv.innerHTML = `
+    ${topBar("דף יומי", { sub: esc(hebrewDate()) })}
+    <main class="page">
+      <p class="greeting">שלום${firstName ? `, ${esc(firstName)}` : ""} 👋</p>
+
+      ${showReminder ? `<div class="banner">⏰ עוד לא סימנת את הדף של היום</div>` : ""}
+
+      <section class="hero${todayStatus ? " " + todayStatus : ""}">
+        <div class="hero-top">
+          <span class="hero-label">הדף היומי</span>
+          ${settings.streak ? `<span class="streak" title="ימי לימוד ברצף">🔥 ${streak}</span>` : ""}
+        </div>
+        <div class="hero-daf">${esc(today.masechet)} <strong>${hebNumeral(today.num)}</strong></div>
+        ${todayStatus ? `<div class="chip ${todayStatus}">${todayStatus === "learned" ? "✓ נלמד" : "⏭ דולג"}</div>` : ""}
+        <div class="hero-actions">
+          ${todayStatus === "learned"
+            ? `<button class="btn ghost" data-action="clear" data-m="${esc(today.masechet)}" data-d="${esc(today.str)}">בטל סימון</button>`
+            : `<button class="btn primary" data-action="mark" data-status="learned" data-m="${esc(today.masechet)}" data-d="${esc(today.str)}">✓ למדתי</button>`}
+          <a class="btn soft" href="${sefariaUrl(today.masechet, today.num)}" target="_blank" rel="noopener">📖 ספריא</a>
+          <button class="btn soft" data-action="nav" data-to="#/m/${encodeURIComponent(today.masechet)}?d=${encodeURIComponent(today.str)}">למסכת ←</button>
+        </div>
+      </section>
+
+      ${sedarim}
+    </main>
+  `;
+}
+
+// -------------------------------
+// 📘 MASECHET
+// -------------------------------
+function renderMasechet(name, focus) {
+  const m = BY_NAME[name];
+  const today = dafYomiFor();
+  const c = countFor(m);
+  const p = pct(c.learned, c.total);
+
+  const tiles = dafList(m).map(d => {
+    const s = store.status(name, d.str);
+    const isToday = name === today.masechet && d.str === today.str;
+    return `
+      <button class="d-tile${s ? " " + s : ""}${isToday ? " is-today" : ""}"
+              id="daf-${d.num}" data-action="daf" data-num="${d.num}" data-d="${esc(d.str)}"
+              aria-label="דף ${esc(d.str)} ${statusLabel(s)}">
+        ${esc(d.str.replace("׳", ""))}
+      </button>`;
+  }).join("");
+
+  appDiv.innerHTML = `
+    <div class="sticky">
+    ${topBar(name, { back: true, sub: `<span id="mProgress">${c.learned} / ${c.total} נלמדו · ${p}%</span>` })}
+    <div class="m-head">
+      <div class="bar"><span id="mBar" style="width:${p}%"></span></div>
+      <div class="legend">
+        <span><i class="dot learned"></i>נלמד</span>
+        <span><i class="dot skipped"></i>דולג</span>
+        <span><i class="dot today"></i>היום</span>
+        <button class="link-btn" data-action="masechet-menu" data-m="${esc(name)}">סימון מרובה ⋯</button>
+      </div>
+    </div>
+    </div>
+    <main class="page">
+      <div class="d-grid" data-m="${esc(name)}">${tiles}</div>
+    </main>
+  `;
+
+  if (focus) {
+    const el = [...appDiv.querySelectorAll(".d-tile")].find(t => t.dataset.d === focus);
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("flash");
+      });
+    }
+  }
+}
+
+function refreshMasechetUI(name) {
+  const m = BY_NAME[name];
+  const c = countFor(m);
+  const p = pct(c.learned, c.total);
+  appDiv.querySelectorAll(".d-tile").forEach(t => {
+    const s = store.status(name, t.dataset.d);
+    t.classList.toggle("learned", s === "learned");
+    t.classList.toggle("skipped", s === "skipped");
+  });
+  const bar = document.getElementById("mBar");
+  const txt = document.getElementById("mProgress");
+  if (bar) bar.style.width = p + "%";
+  if (txt) txt.textContent = `${c.learned} / ${c.total} נלמדו · ${p}%`;
+}
+
+// -------------------------------
+// 📋 BOTTOM SHEET
+// -------------------------------
+function openSheet(html) {
+  closeSheet();
+  const wrap = document.createElement("div");
+  wrap.className = "sheet-wrap";
+  wrap.innerHTML = `<div class="sheet-backdrop" data-action="close-sheet"></div>
+    <div class="sheet" role="dialog">${html}</div>`;
+  document.body.appendChild(wrap);
+  requestAnimationFrame(() => wrap.classList.add("open"));
+}
+
+function closeSheet() {
+  document.querySelectorAll(".sheet-wrap").forEach(el => el.remove());
+}
+
+function dafSheet(name, dStr, num) {
+  const s = store.status(name, dStr);
+  openSheet(`
+    <div class="sheet-title">${esc(name)} דף ${hebNumeral(num)}</div>
+    ${s ? `<div class="chip ${s}">${s === "learned" ? "✓ נלמד" : "⏭ דולג"}</div>` : ""}
+    <div class="sheet-actions">
+      ${s !== "learned" ? `<button class="btn primary" data-action="mark" data-status="learned" data-m="${esc(name)}" data-d="${esc(dStr)}">✓ למדתי</button>` : ""}
+      ${s !== "skipped" ? `<button class="btn soft" data-action="mark" data-status="skipped" data-m="${esc(name)}" data-d="${esc(dStr)}">⏭ דילגתי</button>` : ""}
+      ${s ? `<button class="btn ghost" data-action="clear" data-m="${esc(name)}" data-d="${esc(dStr)}">↩ בטל סימון</button>` : ""}
+      <a class="btn soft" href="${sefariaUrl(name, num)}" target="_blank" rel="noopener">📖 ללמוד בספריא</a>
+    </div>
+  `);
+}
+
+function masechetMenu(name) {
+  openSheet(`
+    <div class="sheet-title">סימון כל מסכת ${esc(name)}</div>
+    <p class="muted small">הפעולה תחול על כל הדפים במסכת.</p>
+    <div class="sheet-actions">
+      <button class="btn primary" data-action="mark-all" data-status="learned" data-m="${esc(name)}">✓ סמן הכל כנלמד</button>
+      <button class="btn soft" data-action="mark-all" data-status="skipped" data-m="${esc(name)}">⏭ סמן הכל כדולג</button>
+      <button class="btn danger" data-action="mark-all" data-status="" data-m="${esc(name)}">↩ נקה את כל הסימונים</button>
+    </div>
+  `);
+}
+
+// -------------------------------
+// 📊 PROGRESS
+// -------------------------------
+function renderProgress() {
+  let learned = 0, skipped = 0, total = 0;
+  const rows = MASECHTOT.map(m => {
+    const c = countFor(m);
+    learned += c.learned; skipped += c.skipped; total += c.total;
+    const p = pct(c.learned, c.total);
+    return `
+      <button class="p-row" data-action="nav" data-to="#/m/${encodeURIComponent(m.name)}">
+        <span class="p-name">${esc(m.name)}</span>
+        <span class="bar"><span style="width:${p}%"></span></span>
+        <span class="p-stats">${c.learned}/${c.total}</span>
+      </button>`;
+  }).join("");
+
+  appDiv.innerHTML = `
+    ${topBar("ההתקדמות שלי", { back: true })}
+    <main class="page">
+      <div class="stats">
+        <div class="stat"><div class="stat-num learned">${learned}</div><div class="stat-label">נלמדו</div></div>
+        <div class="stat"><div class="stat-num skipped">${skipped}</div><div class="stat-label">דולגו</div></div>
+        <div class="stat"><div class="stat-num">${pct(learned, total)}%</div><div class="stat-label">מתוך ${total}</div></div>
+        ${settings.streak ? `<div class="stat"><div class="stat-num">🔥 ${streakDays()}</div><div class="stat-label">ימים ברצף</div></div>` : ""}
+      </div>
+      <div class="p-list">${rows}</div>
+    </main>
+  `;
+}
+
+// -------------------------------
+// ⚙️ SETTINGS
+// -------------------------------
+function renderSettings() {
+  const t = settings.theme;
+  appDiv.innerHTML = `
+    ${topBar("הגדרות", { back: true })}
+    <main class="page">
+      <section class="panel">
+        <h3>מראה</h3>
+        <div class="segmented">
+          <button class="${t === "auto" ? "on" : ""}" data-action="theme" data-v="auto">אוטומטי</button>
+          <button class="${t === "light" ? "on" : ""}" data-action="theme" data-v="light">בהיר</button>
+          <button class="${t === "dark" ? "on" : ""}" data-action="theme" data-v="dark">כהה</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <label class="toggle-row">
+          <span>
+            <strong>🔥 רצף ימי לימוד</strong>
+            <span class="muted small">מציג כמה ימים ברציפות סימנת דף כנלמד</span>
+          </span>
+          <input type="checkbox" data-action="toggle" data-k="streak" ${settings.streak ? "checked" : ""}>
+        </label>
+      </section>
+
+      <section class="panel">
+        <label class="toggle-row">
+          <span>
+            <strong>⏰ תזכורת יומית</strong>
+            <span class="muted small">אחרי השעה שתבחר, אם עוד לא סימנת את הדף של היום, תופיע הודעה במסך הבית</span>
+          </span>
+          <input type="checkbox" data-action="toggle" data-k="reminder" ${settings.reminder ? "checked" : ""}>
+        </label>
+        ${settings.reminder ? `
+          <div class="reminder-opts">
+            <label class="time-row">שעה
+              <input type="time" value="${esc(settings.reminderTime)}" data-action="time">
+            </label>
+            <p class="muted small">כדי לקבל התראה גם כשהאפליקציה סגורה, הוסף תזכורת קבועה ליומן בטלפון:</p>
+            <div class="sheet-actions">
+              <a class="btn soft" href="${googleCalUrl()}" target="_blank" rel="noopener">📅 הוסף ליומן Google</a>
+              <button class="btn soft" data-action="ics">📲 הורד ליומן (iPhone / אחר)</button>
+            </div>
+          </div>` : ""}
+      </section>
+
+      <section class="panel">
+        <div class="muted small">מחובר בתור ${esc(user.displayName || user.email || "")}</div>
+        <button class="btn ghost" data-action="logout">🚪 התנתק</button>
+      </section>
+    </main>
+  `;
+}
+
+function nextReminder() {
+  const [h, m] = (settings.reminderTime || "20:00").split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  if (d < new Date()) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+const pad = n => String(n).padStart(2, "0");
+const localStamp = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+const APP_URL = "https://siporeysaba.github.io/daf-yomi-app/";
+
+function googleCalUrl() {
+  const start = nextReminder();
+  const end = new Date(start.getTime() + 30 * 60000);
+  const p = new URLSearchParams({
+    action: "TEMPLATE",
+    text: "📖 דף יומי",
+    details: `זמן ללמוד את הדף היומי\n${APP_URL}`,
+    dates: `${localStamp(start)}/${localStamp(end)}`,
+    recur: "RRULE:FREQ=DAILY",
+  });
+  return `https://calendar.google.com/calendar/render?${p}`;
+}
+
+function downloadIcs() {
+  const start = nextReminder();
+  const end = new Date(start.getTime() + 30 * 60000);
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//daf-yomi-app//HE",
+    "BEGIN:VEVENT",
+    `UID:dafyomi-reminder-${Date.now()}@daf-yomi-app`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
+    `DTSTART:${localStamp(start)}`,
+    `DTEND:${localStamp(end)}`,
+    "RRULE:FREQ=DAILY",
+    "SUMMARY:📖 דף יומי",
+    `DESCRIPTION:זמן ללמוד את הדף היומי\\n${APP_URL}`,
+    "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:דף יומי", "TRIGGER:PT0M", "END:VALARM",
+    "END:VEVENT", "END:VCALENDAR"
+  ].join("\r\n");
+  const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "daf-yomi-reminder.ics";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+// -------------------------------
+// 🖱️ ACTIONS (event delegation)
+// -------------------------------
+async function markDaf(name, dStr, status) {
+  try {
+    if (status) await store.set(name, dStr, status);
+    else await store.clear(name, dStr);
+    showToast(status === "learned" ? "✅ כל הכבוד, עוד דף לאוסף"
+      : status === "skipped" ? "⏭ בעזרת ה' תזכה להשלים" : "↩ הסימון בוטל");
+  } catch (err) {
+    console.error(err);
+    showToast("❌ השמירה נכשלה, בדוק חיבור לאינטרנט");
+  }
+}
+
+async function markAll(name, status) {
+  const m = BY_NAME[name];
+  const msg = status === "learned" ? `לסמן את כל ${dafCount(m)} הדפים ב${name} כנלמדו?`
+    : status === "skipped" ? `לסמן את כל ${dafCount(m)} הדפים ב${name} כדולגו?`
+    : `למחוק את כל הסימונים ב${name}?`;
+  if (!confirm(msg)) return;
+  closeSheet();
+  try {
+    await store.setMany(name, dafList(m).map(d => d.str), status || null);
+    showToast(status === "learned" ? "✅ כל המסכת סומנה כנלמדה"
+      : status === "skipped" ? "⏭ כל המסכת סומנה כדולגה" : "↩ הסימונים נמחקו");
+  } catch (err) {
+    console.error(err);
+    showToast("❌ השמירה נכשלה, בדוק חיבור לאינטרנט");
+  }
+  refreshMasechetUI(name);
+}
+
+function afterChange(name, close = true) {
+  if (close) closeSheet();
+  if (parseRoute().view === "masechet") refreshMasechetUI(name);
+  else render();
+}
+
+document.addEventListener("click", async e => {
+  const el = e.target.closest("[data-action]");
+  if (!el) return;
+  const { action } = el.dataset;
+
+  switch (action) {
+    case "login": return login();
+    case "logout": return signOut(auth).then(() => location.replace("#/"));
+    case "retry": return render();
+    case "nav": return go(el.dataset.to);
+    case "back": return goBack();
+    case "close-sheet": return closeSheet();
+    case "daf": return dafSheet(el.closest(".d-grid").dataset.m, el.dataset.d, Number(el.dataset.num));
+    case "masechet-menu": return masechetMenu(el.dataset.m);
+    case "mark-all": return markAll(el.dataset.m, el.dataset.status);
+    case "ics": return downloadIcs();
+    case "theme":
+      saveSettings({ theme: el.dataset.v });
+      return renderSettings();
+    case "mark":
+    case "clear": {
+      const name = el.dataset.m, dStr = el.dataset.d;
+      el.disabled = true;
+      const p = markDaf(name, dStr, action === "mark" ? el.dataset.status : null);
+      afterChange(name); // עדכון מיידי במסך, השמירה ממשיכה ברקע
+      await p;
+      afterChange(name, false); // אם השמירה נכשלה – חוזר למצב הקודם
+      return;
+    }
+  }
+});
+
+document.addEventListener("change", e => {
+  const el = e.target;
+  if (el.dataset.action === "toggle") {
+    saveSettings({ [el.dataset.k]: el.checked });
+    renderSettings();
+  } else if (el.dataset.action === "time") {
+    saveSettings({ reminderTime: el.value || "20:00" });
+    renderSettings();
+  }
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeSheet();
+});
+
+// -------------------------------
+// 🚀 START
+// -------------------------------
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./service-worker.js").catch(err =>
+    console.warn("Service Worker registration failed:", err));
+}
+
+// מצב הדגמה מקומי לבדיקות בלבד (לא נוגע בנתונים אמיתיים)
+const isLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+const demo = isLocal && new URLSearchParams(location.search).has("demo");
+
+if (demo) {
+  user = { uid: "demo", displayName: "משתמש הדגמה" };
+  store = createStore("demo", { demo: true });
+  render();
+} else {
+  onAuthStateChanged(auth, u => {
+    user = u;
+    if (u) {
+      store = createStore(u.uid);
+      render();
+    } else {
+      store = null;
+      renderLogin();
+    }
+  });
+}
